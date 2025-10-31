@@ -31,7 +31,7 @@ const BOT_COLOR = "#00ff00"; // 봇 색상 (초록색) - 이제 기본값으로�
 const BOT_SPEED = 0.000004; // [수정됨] 0.000001 -> 0.000004 (봇 속도 밸런스 조정)
 // const BOT_FOOD_DROP_COUNT = 5; // [제거됨] 봇 점수에 비례하도록 변경
 const COLLISION_DISTANCE = 0.000008; // 충돌 감지 거리
-const MODE_PROB = 0.01; // [추가됨] 봇이 모드를 변경할 확률 (1%)
+const MODE_PROB = 0.001; // [추가됨] 봇이 모드를 변경할 확률 (1%)
 // --- [추가 끝] ---
 
 // Moving average configuration for GPS smoothing
