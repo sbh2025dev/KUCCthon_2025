@@ -27,8 +27,8 @@ const MAP_ZOOM = 17;
 
 // --- [추가됨] Bot configuration ---
 const BOT_NUM = 7; // 화면에 유지할 봇의 수
-const BOT_COLOR = "#00ff00"; // 봇 색상 (초록색)
-const BOT_SPEED = 0.000004; // 봇 이동 속도 (플레이어보다 느리게)
+const BOT_COLOR = "#00ff00"; // 봇 색상 (초록색) - 이제 기본값으로만 사용
+const BOT_SPEED = 0.000001; // 봇 이동 속도 (플레이어보다 느리게)
 const BOT_FOOD_DROP_COUNT = 5; // 봇 사망 시 드랍할 음식 수
 const COLLISION_DISTANCE = 0.000008; // 충돌 감지 거리
 // --- [추가 끝] ---
@@ -231,7 +231,7 @@ function spawnBot(centerLat, centerLng) {
     circles: [],
     target: null, // AI 목표물 (food 객체)
     score: 0, // 봇의 점수(길이)
-    color: BOT_COLOR,
+    color: generateBotColor(), // [수정됨] 봇마다 고유 색상 부여
   };
 
   bots.push(bot);
@@ -243,6 +243,25 @@ function distance(lat1, lng1, lat2, lng2) {
   const dLng = lng2 - lng1;
   return Math.sqrt(dLat * dLat + dLng * dLng);
 }
+
+// --- [추가됨] 봇 색상 생성 헬퍼 함수 ---
+function componentToHex(c) {
+  var hex = c.toString(16);
+  return hex.length == 1 ? "0" + hex : hex;
+}
+
+function generateBotColor() {
+  // 기본 초록색 (R=0, G=255, B=0)에서
+  // R과 B 채널에 0~63 (0x3F) 사이의 노이즈를 추가합니다.
+  // G 채널은 200~255 사이로 유지하여 밝은 초록색 계열을 보장합니다.
+  const r = Math.floor(Math.random() * 64);
+  const g = 200 + Math.floor(Math.random() * 56);
+  const b = Math.floor(Math.random() * 64);
+  
+  return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+// --- [추가 끝] ---
+
 
 // --- Player Snake 로직 ---
 
