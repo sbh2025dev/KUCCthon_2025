@@ -999,7 +999,7 @@ function updateHUD() {
     .padStart(2, "0")}`;
 
   // Calculate distance (length * segment distance converted to km)
-  const distanceKm = (playerSnake.length * SNAKE_SEGMENT_DISTANCE * 10) // not a real calculation
+  const distanceKm = (playerSnake.length * SNAKE_SEGMENT_DISTANCE * 100) // not a real calculation
     .toFixed(2);
   document.getElementById("distance").textContent = distanceKm;
 }
