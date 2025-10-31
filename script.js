@@ -411,9 +411,9 @@ function updateLocation() {
     // Success callback
     (position) => {
       const accuracy = position.coords.accuracy;
-      if (accuracy > 20) {
-        return; // Skip if accuracy is over 20
-      }
+      //   if (accuracy > 20) {
+      //     return; // Skip if accuracy is over 20
+      //   }
 
       const rawLat = position.coords.latitude;
       const rawLng = position.coords.longitude;
