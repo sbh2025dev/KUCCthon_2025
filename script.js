@@ -21,6 +21,7 @@ const FOOD_COUNT = 20;
 const SNAKE_WIDTH = 5;
 const SNAKE_HEAD_RADIUS = 5;
 const FOOD_RADIUS = 10;
+const MAP_ZOOM = 18;
 
 // Color palette for snake
 const SNAKE_COLORS = [
@@ -36,7 +37,7 @@ const SNAKE_COLORS = [
 let currentSnakeColor = SNAKE_COLORS[0];
 
 // Initialize map with a default view
-function initMap(lat = 37.7749, lng = -122.4194, zoom = 18) {
+function initMap(lat = 37.7749, lng = -122.4194, zoom = MAP_ZOOM) {
   if (!map) {
     map = L.map("map", {
       zoomControl: false,
@@ -391,10 +392,10 @@ function updateLocation() {
 
       // Initialize map if not already done
       if (!map) {
-        initMap(lat, lng, 18);
+        initMap(lat, lng, MAP_ZOOM);
       } else {
         // Pan to new location
-        map.setView([lat, lng], 18);
+        map.setView([lat, lng], MAP_ZOOM);
       }
 
       // Remove existing marker and accuracy circle if they exist
