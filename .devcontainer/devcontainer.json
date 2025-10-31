@@ -1,0 +1,38 @@
+{
+	"name": "Node.js Development",
+	"image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+	
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+				"ms-vscode.vscode-typescript-next",
+				"formulahendry.auto-rename-tag",
+				"bradlc.vscode-tailwindcss",
+				"ritwickdey.LiveServer",
+				"christian-kohler.path-intellisense"
+			],
+			"settings": {
+				"editor.defaultFormatter": "esbenp.prettier-vscode",
+				"editor.formatOnSave": true,
+				"editor.codeActionsOnSave": {
+					"source.fixAll.eslint": "explicit"
+				},
+				"javascript.updateImportsOnFileMove.enabled": "always",
+				"typescript.updateImportsOnFileMove.enabled": "always"
+			}
+		}
+	},
+
+	"forwardPorts": [3000, 8000, 8080, 5500],
+	
+	"postCreateCommand": "npm install -g http-server",
+	
+	"features": {
+		"ghcr.io/devcontainers/features/git:1": {}
+	},
+
+	"remoteUser": "node"
+}
+
