@@ -15,8 +15,7 @@ let animationFrame = null;
 
 // Game configuration
 const INITIAL_SNAKE_LENGTH = 5;
-//const SNAKE_SPEED = 0.000008; // degrees per frame
-const FOLLOW_FACTOR = 0.1; //follow rate per fram ; for smooth snake 
+const SNAKE_SPEED = 0.000008; // degrees per frame
 const SNAKE_SEGMENT_DISTANCE = 0.000005; // distance between segments
 const FOOD_COUNT = 200;
 const SNAKE_WIDTH = 10;
@@ -25,7 +24,7 @@ const FOOD_RADIUS = 10;
 const MAP_ZOOM = 17;
 
 // Moving average configuration for GPS smoothing
-const GPS_SMOOTHING_WINDOW = 2; // Number of readings to average
+const GPS_SMOOTHING_WINDOW = 5; // Number of readings to average
 let latReadings = [];
 let lngReadings = [];
 
@@ -191,18 +190,16 @@ function updateSnake() {
   const dy = mouseTarget.lat - head.lat;
   const dist = Math.sqrt(dx * dx + dy * dy);
 
-  // [수정됨] 0.00001 (아주 가까운 거리)보다 클 때만 이동 로직을 실행합니다.
   if (dist > 0.00001) {
-    
-    // --- [수정된 로직 시작] ---
-    // 고정된 속도(SNAKE_SPEED) 대신,
-    // 목표까지 남은 거리의 일정 비율(FOLLOW_FACTOR)만큼 이동합니다.
-    const newHead = {
-      lat: head.lat + dy * FOLLOW_FACTOR,
-      lng: head.lng + dx * FOLLOW_FACTOR,
-    };
-    // --- [수정된 로직 끝] ---
+    // Normalize direction
+    const dirX = dx / dist;
+    const dirY = dy / dist;
 
+    // Move head towards target
+    const newHead = {
+      lat: head.lat + dirY * SNAKE_SPEED,
+      lng: head.lng + dirX * SNAKE_SPEED,
+    };
 
     // Add new head
     snake.unshift(newHead);
@@ -216,9 +213,7 @@ function updateSnake() {
       const dy = previous.lat - current.lat;
       const segDist = Math.sqrt(dx * dx + dy * dy);
 
-      // [수정됨] segDist가 0보다 클 때만 보간을 수행합니다. (0으로 나누기 방지)
-      // (기존 0.001 조건은 뱀이 멈췄을 때 마디가 겹치는 문제를 일으킬 수 있음)
-      if (segDist > 0) { 
+      if (segDist > 0.001) {
         const ratio = SNAKE_SEGMENT_DISTANCE / segDist;
         snake[i] = {
           lat: previous.lat - dy * ratio,
