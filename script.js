@@ -430,6 +430,9 @@ function updateLocation() {
 
       hideLoading();
 
+      // Update snake target to current GPS position
+      mouseTarget = { lat: lat, lng: lng };
+
       // Start the game
       if (!gameActive) {
         initGame(lat, lng);
@@ -472,45 +475,45 @@ function updateLocation() {
   );
 }
 
-// Mouse move handler
-document.addEventListener("mousemove", (e) => {
-  // Update cursor indicator position
-  const cursorIndicator = document.getElementById("cursor-indicator");
-  cursorIndicator.style.left = e.clientX + "px";
-  cursorIndicator.style.top = e.clientY + "px";
+// Mouse move handler - DISABLED: Snake now tracks GPS position
+// document.addEventListener("mousemove", (e) => {
+//   // Update cursor indicator position
+//   const cursorIndicator = document.getElementById("cursor-indicator");
+//   cursorIndicator.style.left = e.clientX + "px";
+//   cursorIndicator.style.top = e.clientY + "px";
 
-  // Convert mouse position to map coordinates
-  if (map) {
-    const mapContainer = map.getContainer();
-    const rect = mapContainer.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const point = map.containerPointToLatLng([x, y]);
-    mouseTarget = { lat: point.lat, lng: point.lng };
-  }
-});
+//   // Convert mouse position to map coordinates
+//   if (map) {
+//     const mapContainer = map.getContainer();
+//     const rect = mapContainer.getBoundingClientRect();
+//     const x = e.clientX - rect.left;
+//     const y = e.clientY - rect.top;
+//     const point = map.containerPointToLatLng([x, y]);
+//     mouseTarget = { lat: point.lat, lng: point.lng };
+//   }
+// });
 
-// Touch move handler for mobile
-document.addEventListener("touchmove", (e) => {
-  if (e.touches.length > 0) {
-    const touch = e.touches[0];
+// Touch move handler for mobile - DISABLED: Snake now tracks GPS position
+// document.addEventListener("touchmove", (e) => {
+//   if (e.touches.length > 0) {
+//     const touch = e.touches[0];
 
-    // Update cursor indicator position
-    const cursorIndicator = document.getElementById("cursor-indicator");
-    cursorIndicator.style.left = touch.clientX + "px";
-    cursorIndicator.style.top = touch.clientY + "px";
+//     // Update cursor indicator position
+//     const cursorIndicator = document.getElementById("cursor-indicator");
+//     cursorIndicator.style.left = touch.clientX + "px";
+//     cursorIndicator.style.top = touch.clientY + "px";
 
-    // Convert touch position to map coordinates
-    if (map) {
-      const mapContainer = map.getContainer();
-      const rect = mapContainer.getBoundingClientRect();
-      const x = touch.clientX - rect.left;
-      const y = touch.clientY - rect.top;
-      const point = map.containerPointToLatLng([x, y]);
-      mouseTarget = { lat: point.lat, lng: point.lng };
-    }
-  }
-});
+//     // Convert touch position to map coordinates
+//     if (map) {
+//       const mapContainer = map.getContainer();
+//       const rect = mapContainer.getBoundingClientRect();
+//       const x = touch.clientX - rect.left;
+//       const y = touch.clientY - rect.top;
+//       const point = map.containerPointToLatLng([x, y]);
+//       mouseTarget = { lat: point.lat, lng: point.lng };
+//     }
+//   }
+// });
 
 // Initialize on page load
 window.addEventListener("load", () => {
