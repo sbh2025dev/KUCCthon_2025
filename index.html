@@ -198,6 +198,25 @@
       }
       /* --- [추가된 코드 끝] --- */
 
+      /* --- [수정됨] 봇 사망 메시지 (화면 하단) --- */
+      .bot-slain-message {
+        position: absolute;
+        bottom: 20px; 
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.7);
+        color: #ffb700; /* 킬 메시지와 구분되는 노란색 계열 */
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        z-index: 2500;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.5s ease-out;
+      }
+      /* --- [수정 끝] --- */
+
       .cursor-indicator {
         position: fixed;
         width: 20px;
@@ -276,6 +295,8 @@
     </div>
 
     <div id="kill-message" class="kill-message"></div>
+    
+    <div id="bot-slain-message" class="bot-slain-message"></div>
 
     <div id="cursor-indicator" class="cursor-indicator"></div>
 
