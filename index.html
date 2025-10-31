@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Current Location Map</title>
 
-    <!-- Leaflet CSS -->
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -13,7 +12,6 @@
       crossorigin=""
     />
 
-    <!-- Leaflet JavaScript -->
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
@@ -179,6 +177,25 @@
         padding: 15px 40px;
         cursor: pointer;
       }
+      
+      /* --- [추가된 코드] --- */
+      .kill-message {
+        position: absolute;
+        top: 20%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(46, 204, 113, 0.9);
+        color: white;
+        padding: 15px 30px;
+        border-radius: 10px;
+        font-size: 1.3rem;
+        font-weight: bold;
+        z-index: 2500;
+        display: none;
+        box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+        transition: opacity 0.5s ease-out;
+      }
+      /* --- [추가된 코드 끝] --- */
 
       .cursor-indicator {
         position: fixed;
@@ -199,13 +216,11 @@
 
     <div id="map"></div>
 
-    <!-- Game HUD -->
     <div id="game-hud" class="game-hud" style="display: none">
       <div class="score">🎯 Score: <span id="score">0</span></div>
       <div class="length">🐍 Length: <span id="length">5</span></div>
     </div>
 
-    <!-- Game Over Screen -->
     <div id="game-over" class="game-over">
       <h2>💀 Game Over!</h2>
       <div class="final-score">
@@ -215,7 +230,8 @@
       <button onclick="restartGame()">🎮 Play Again</button>
     </div>
 
-    <!-- Cursor Indicator -->
+    <div id="kill-message" class="kill-message"></div>
+
     <div id="cursor-indicator" class="cursor-indicator"></div>
 
     <div id="info-panel" class="info-panel" style="display: none">
