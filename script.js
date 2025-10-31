@@ -18,7 +18,7 @@ let animationFrame = null;
 // Game configuration
 const INITIAL_SNAKE_LENGTH = 5;
 const SNAKE_SPEED = 0.000008; // (롤백된) 고정 속도
-const SNAKE_SEGMENT_DISTANCE = 0.000001; // distance between segments
+const SNAKE_SEGMENT_DISTANCE = 0.000005; // [수정됨] 0.000001 -> 0.000005 (플레이어 뱀 뭉침 현상 해결)
 const FOOD_COUNT = 200;
 const SNAKE_WIDTH = 10;
 const SNAKE_HEAD_RADIUS = 5;
@@ -26,9 +26,9 @@ const FOOD_RADIUS = 10;
 const MAP_ZOOM = 17;
 
 // --- [추가됨] Bot configuration ---
-const BOT_NUM = 3; // 화면에 유지할 봇의 수
+const BOT_NUM = 5; // 화면에 유지할 봇의 수
 const BOT_COLOR = "#00ff00"; // 봇 색상 (초록색) - 이제 기본값으로만 사용
-const BOT_SPEED = 0.000001; // 봇 이동 속도 (플레이어보다 느리게)
+const BOT_SPEED = 0.000008; // [수정됨] 0.000001 -> 0.000004 (봇 속도 밸런스 조정)
 const BOT_FOOD_DROP_COUNT = 5; // 봇 사망 시 드랍할 음식 수
 const COLLISION_DISTANCE = 0.000008; // 충돌 감지 거리
 // --- [추가 끝] ---
@@ -428,15 +428,20 @@ function renderPlayer() {
 // 맵 상의 봇들을 업데이트
 function updateBots() {
   bots.forEach((bot) => {
-    // 1. AI로 목표물 찾기
+    // 1. AI로 목표물 찾기 (목표물 탐색은 매 프레임 수행)
     findBotTarget(bot);
-    // 2. 목표물로 이동
-    moveBot(bot);
-    // 3. 봇 음식 섭취 확인
-    checkBotFoodCollision(bot);
-    // 4. 봇 자살 확인
-    checkBotSelfCollision(bot);
-    // 5. 봇 렌더링
+
+    // [수정됨] 10% 확률로만 이동 및 충돌 검사 수행
+    if (Math.random() < 0.1) {
+      // 2. 목표물로 이동
+      moveBot(bot);
+      // 3. 봇 음식 섭취 확인
+      checkBotFoodCollision(bot);
+      // 4. 봇 자살 확인
+      checkBotSelfCollision(bot);
+    }
+
+    // 5. 봇 렌더링 (렌더링은 매 프레임 수행)
     renderBot(bot);
   });
 }
