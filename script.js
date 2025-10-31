@@ -177,7 +177,7 @@ function spawnFood(centerLat, centerLng) {
       radius: FOOD_RADIUS,
       color: foodColor,
       fillColor: foodColor,
-      fillOpacity: 0.9,
+      fillOpacity: 0.5,
       weight: 2,
     }).addTo(map);
 
@@ -208,7 +208,7 @@ function respawnFood(centerLat, centerLng) {
     radius: FOOD_RADIUS,
     color: foodColor,
     fillColor: foodColor,
-    fillOpacity: 0.9,
+    fillOpacity: 0.5,
     weight: 2,
   }).addTo(map);
 
