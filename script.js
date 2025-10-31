@@ -23,6 +23,11 @@ const SNAKE_HEAD_RADIUS = 5;
 const FOOD_RADIUS = 10;
 const MAP_ZOOM = 17;
 
+// Moving average configuration for GPS smoothing
+const GPS_SMOOTHING_WINDOW = 5; // Number of readings to average
+let latReadings = [];
+let lngReadings = [];
+
 // Color palette for snake
 const SNAKE_COLORS = [
   "#667eea",
@@ -374,6 +379,27 @@ function hideLoading() {
   loadingEl.style.display = "none";
 }
 
+// Apply moving average smoothing to GPS coordinates
+function getSmoothedCoordinates(rawLat, rawLng) {
+  // Add new readings to the arrays
+  latReadings.push(rawLat);
+  lngReadings.push(rawLng);
+
+  // Keep only the last N readings (window size)
+  if (latReadings.length > GPS_SMOOTHING_WINDOW) {
+    latReadings.shift();
+    lngReadings.shift();
+  }
+
+  // Calculate averages
+  const smoothedLat =
+    latReadings.reduce((sum, val) => sum + val, 0) / latReadings.length;
+  const smoothedLng =
+    lngReadings.reduce((sum, val) => sum + val, 0) / lngReadings.length;
+
+  return { lat: smoothedLat, lng: smoothedLng };
+}
+
 // Get and display current location
 function updateLocation() {
   if (!navigator.geolocation) {
@@ -389,8 +415,13 @@ function updateLocation() {
         return; // Skip if accuracy is over 20
       }
 
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
+      const rawLat = position.coords.latitude;
+      const rawLng = position.coords.longitude;
+
+      // Apply moving average smoothing
+      const smoothed = getSmoothedCoordinates(rawLat, rawLng);
+      const lat = smoothed.lat;
+      const lng = smoothed.lng;
 
       // Initialize map if not already done
       if (!map) {
