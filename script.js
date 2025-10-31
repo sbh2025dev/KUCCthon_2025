@@ -527,8 +527,8 @@ function checkBotSelfCollision(bot) {
     const dist = distance(head.lat, head.lng, segment.lat, segment.lng);
 
     if (dist < COLLISION_DISTANCE) {
-      killBot(bot, "suicide"); // 자살
-      return;
+      // killBot(bot, "suicide"); // [수정됨] 봇이 자살하지 않도록 비활성화
+      // return; // [수정됨] 봇이 자살하지 않도록 비활성화
     }
   }
 }
