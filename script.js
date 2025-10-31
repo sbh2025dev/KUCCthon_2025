@@ -28,7 +28,7 @@ const MAP_ZOOM = 17;
 // --- [추가됨] Bot configuration ---
 const BOT_NUM = 7; // 화면에 유지할 봇의 수
 const BOT_COLOR = "#00ff00"; // 봇 색상 (초록색) - 이제 기본값으로만 사용
-const BOT_SPEED = 0.000001; // 봇 이동 속도 (플레이어보다 느리게)
+const BOT_SPEED = 0.00000025; // 봇 이동 속도 (플레이어보다 느리게)
 const BOT_FOOD_DROP_COUNT = 5; // 봇 사망 시 드랍할 음식 수
 const COLLISION_DISTANCE = 0.000008; // 충돌 감지 거리
 // --- [추가 끝] ---
