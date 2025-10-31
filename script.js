@@ -18,10 +18,10 @@ const INITIAL_SNAKE_LENGTH = 5;
 const SNAKE_SPEED = 0.000008; // degrees per frame
 const SNAKE_SEGMENT_DISTANCE = 0.000005; // distance between segments
 const FOOD_COUNT = 20;
-const SNAKE_WIDTH = 5;
+const SNAKE_WIDTH = 10;
 const SNAKE_HEAD_RADIUS = 5;
 const FOOD_RADIUS = 10;
-const MAP_ZOOM = 18;
+const MAP_ZOOM = 17;
 
 // Color palette for snake
 const SNAKE_COLORS = [
@@ -481,7 +481,11 @@ document.addEventListener("mousemove", (e) => {
 
   // Convert mouse position to map coordinates
   if (map) {
-    const point = map.containerPointToLatLng([e.clientX, e.clientY]);
+    const mapContainer = map.getContainer();
+    const rect = mapContainer.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const point = map.containerPointToLatLng([x, y]);
     mouseTarget = { lat: point.lat, lng: point.lng };
   }
 });
@@ -498,7 +502,11 @@ document.addEventListener("touchmove", (e) => {
 
     // Convert touch position to map coordinates
     if (map) {
-      const point = map.containerPointToLatLng([touch.clientX, touch.clientY]);
+      const mapContainer = map.getContainer();
+      const rect = mapContainer.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      const point = map.containerPointToLatLng([x, y]);
       mouseTarget = { lat: point.lat, lng: point.lng };
     }
   }
