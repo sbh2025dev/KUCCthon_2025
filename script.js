@@ -1,6 +1,6 @@
 // Initialize the map
 let map;
-let marker;
+let marker; // [수정됨] 'centerMarker' 대신 이 전역 변수를 사용합니다.
 let accuracyCircle;
 
 // --- [수정됨] Game variables ---
@@ -26,9 +26,9 @@ const FOOD_RADIUS = 10;
 const MAP_ZOOM = 17;
 
 // --- [추가됨] Bot configuration ---
-const BOT_NUM = 5; // 화면에 유지할 봇의 수
+const BOT_NUM = 3; // 화면에 유지할 봇의 수
 const BOT_COLOR = "#00ff00"; // 봇 색상 (초록색) - 이제 기본값으로만 사용
-const BOT_SPEED = 0.000008; // [수정됨] 0.000001 -> 0.000004 (봇 속도 밸런스 조정)
+const BOT_SPEED = 0.000004; // [수정됨] 0.000001 -> 0.000004 (봇 속도 밸런스 조정)
 const BOT_FOOD_DROP_COUNT = 5; // 봇 사망 시 드랍할 음식 수
 const COLLISION_DISTANCE = 0.000008; // 충돌 감지 거리
 // --- [추가 끝] ---
@@ -127,11 +127,11 @@ function clearGame() {
   playerSnakeCircles.forEach((circle) => map.removeLayer(circle));
   playerSnakeCircles = [];
 
-  // [추가됨] Remove bot snakes
+  // [수정됨] 봇 레이어 제거 및 배열 초기화 (유령 봇 버그 수정)
   bots.forEach((bot) => clearBotLayers(bot));
   bots = [];
 
-  // Remove food items
+  // [수정됨] 음식 아이템 제거 및 배열 초기화
   foodItems.forEach((food) => map.removeLayer(food.circle));
   foodItems = [];
 
@@ -887,7 +887,7 @@ function updateLocation() {
         // map.setView([lat, lng], MAP_ZOOM);
       }
 
-      // Remove existing marker and accuracy circle if they exist
+      // [수정됨] 청색 점(GPS 마커) 중첩 버그 수정
       if (marker) {
         map.removeLayer(marker);
       }
@@ -904,8 +904,8 @@ function updateLocation() {
         weight: 1,
       }).addTo(map);
 
-      // add center marker
-      const centerMarker = L.circle([lat, lng], {
+      // [수정됨] 'centerMarker' 대신 전역 변수 'marker'에 할당
+      marker = L.circle([lat, lng], {
         radius: 10,
         color: "#667eea",
         fillColor: "#667eea",
