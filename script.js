@@ -26,12 +26,12 @@ const FOOD_RADIUS = 10;
 const MAP_ZOOM = 17;
 
 // --- [추가됨] Bot configuration ---
-const BOT_NUM = 4; // 화면에 유지할 봇의 수
+const BOT_NUM = 10; // 화면에 유지할 봇의 수
 const BOT_COLOR = "#00ff00"; // 봇 색상 (초록색) - 이제 기본값으로만 사용
 const BOT_SPEED = 0.000004; // [수정됨] 0.000001 -> 0.000004 (봇 속도 밸런스 조정)
-const BOT_FOOD_DROP_COUNT = 5; // 봇 사망 시 드랍할 음식 수
+// const BOT_FOOD_DROP_COUNT = 5; // [제거됨] 봇 점수에 비례하도록 변경
 const COLLISION_DISTANCE = 0.000008; // 충돌 감지 거리
-const MODE_PROB = 0.001; // [추가됨] 봇이 모드를 변경할 확률 (1%)
+const MODE_PROB = 0.01; // [추가됨] 봇이 모드를 변경할 확률 (1%)
 // --- [추가 끝] ---
 
 // Moving average configuration for GPS smoothing
@@ -642,8 +642,8 @@ function killBot(bot, killType) {
   // 2. 봇 배열에서 제거
   bots = bots.filter((b) => b.id !== bot.id);
 
-  // 3. 봇의 몸통을 음식으로 드랍
-  dropFoodFromSnake(bot.snake);
+  // 3. 봇의 몸통을 음식으로 드랍 [수정됨]
+  dropFoodFromSnake(bot);
 
   // 4. 플레이어가 죽인 경우, 점수 추가 및 메시지 표시
   if (killType === "player_kill") {
@@ -654,32 +654,42 @@ function killBot(bot, killType) {
   }
 }
 
-// 뱀 몸통을 음식으로 변환
-function dropFoodFromSnake(snakeArray) {
-  // 성능을 위해 뱀의 모든 마디가 아닌, 일부만 음식으로 드랍
-  for (let i = 0; i < snakeArray.length; i += 10) {
-    if (i > BOT_FOOD_DROP_COUNT * 10) break; // 최대 드랍 수
+// [수정됨] 뱀 몸통을 점수에 비례하여 음식으로 변환
+function dropFoodFromSnake(bot) {
+    const snakeArray = bot.snake;
+    // 봇이 먹은 밥(score)의 50%만큼 드랍 (최소 1개는 드랍되도록 올림)
+    const foodToDrop = Math.ceil(bot.score * 0.5);
 
-    const segment = snakeArray[i];
-    const foodColor =
-      SNAKE_COLORS[Math.floor(Math.random() * SNAKE_COLORS.length)];
-    const circle = L.circle([segment.lat, segment.lng], {
-      radius: FOOD_RADIUS, // 일반 음식보다 약간 크게
-      color: foodColor,
-      fillColor: foodColor,
-      fillOpacity: 0.9,
-      weight: 2,
-    }).addTo(map);
-    // [수정] 드랍되는 음식에도 ID 부여
-    foodItems.push({
-      id: Date.now() + Math.random(),
-      lat: segment.lat,
-      lng: segment.lng,
-      circle,
-      color: foodColor,
-    });
-  }
+    // 먹은게 없으면(score 0) 드랍 없음
+    if (foodToDrop <= 0) return;
+
+    const snakeLength = snakeArray.length;
+    // 뱀 길이를 드랍할 음식 수로 나누어 '간격(step)'을 계산
+    // (간격은 최소 1, 0으로 나눠지는것 방지)
+    const step = Math.max(1, Math.floor(snakeLength / foodToDrop));
+
+    // 뱀 몸통을 'step' 간격으로 순회하며 음식 드랍
+    for (let i = 0; i < snakeLength; i += step) { 
+        const segment = snakeArray[i];
+        const foodColor = SNAKE_COLORS[Math.floor(Math.random() * SNAKE_COLORS.length)];
+        const circle = L.circle([segment.lat, segment.lng], {
+            radius: FOOD_RADIUS,
+            color: foodColor,
+            fillColor: foodColor,
+            fillOpacity: 0.9,
+            weight: 2,
+        }).addTo(map);
+        
+        foodItems.push({ 
+            id: Date.now() + Math.random(), 
+            lat: segment.lat, 
+            lng: segment.lng, 
+            circle, 
+            color: foodColor 
+        });
+    }
 }
+
 
 // 킬 메시지 표시
 function showKillMessage(message) {
