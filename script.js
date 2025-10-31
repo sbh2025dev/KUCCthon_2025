@@ -18,7 +18,7 @@ let animationFrame = null;
 // Game configuration
 const INITIAL_SNAKE_LENGTH = 5;
 const SNAKE_SPEED = 0.000008; // (롤백된) 고정 속도
-const SNAKE_SEGMENT_DISTANCE = 0.000005; // distance between segments
+const SNAKE_SEGMENT_DISTANCE = 0.000001; // distance between segments
 const FOOD_COUNT = 200;
 const SNAKE_WIDTH = 10;
 const SNAKE_HEAD_RADIUS = 5;
@@ -26,11 +26,11 @@ const FOOD_RADIUS = 10;
 const MAP_ZOOM = 17;
 
 // --- [추가됨] Bot configuration ---
-const BOT_NUM = 1; // 화면에 유지할 봇의 수
+const BOT_NUM = 3; // 화면에 유지할 봇의 수
 const BOT_COLOR = "#00ff00"; // 봇 색상 (초록색) - 이제 기본값으로만 사용
 const BOT_SPEED = 0.000001; // 봇 이동 속도 (플레이어보다 느리게)
 const BOT_FOOD_DROP_COUNT = 5; // 봇 사망 시 드랍할 음식 수
-const COLLISION_DISTANCE = 0.000001; // 충돌 감지 거리
+const COLLISION_DISTANCE = 0.000008; // 충돌 감지 거리
 // --- [추가 끝] ---
 
 // Moving average configuration for GPS smoothing
