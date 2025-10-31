@@ -395,7 +395,7 @@ function updateLocation() {
         initMap(lat, lng, MAP_ZOOM);
       } else {
         // Pan to new location
-        map.setView([lat, lng], MAP_ZOOM);
+        // map.setView([lat, lng], MAP_ZOOM);
       }
 
       // Remove existing marker and accuracy circle if they exist
