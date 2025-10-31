@@ -16,7 +16,7 @@ let animationFrame = null;
 // Game configuration
 const INITIAL_SNAKE_LENGTH = 5;
 //const SNAKE_SPEED = 0.000008; // degrees per frame
-const FOLLOW_FACTOR = 0.05; //follow rate per fram ; for smooth snake 
+const FOLLOW_FACTOR = 0.1; //follow rate per fram ; for smooth snake 
 const SNAKE_SEGMENT_DISTANCE = 0.000005; // distance between segments
 const FOOD_COUNT = 200;
 const SNAKE_WIDTH = 10;
@@ -25,7 +25,7 @@ const FOOD_RADIUS = 10;
 const MAP_ZOOM = 17;
 
 // Moving average configuration for GPS smoothing
-const GPS_SMOOTHING_WINDOW = 5; // Number of readings to average
+const GPS_SMOOTHING_WINDOW = 2; // Number of readings to average
 let latReadings = [];
 let lngReadings = [];
 
