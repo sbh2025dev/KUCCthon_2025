@@ -27,7 +27,7 @@ const FOOD_RADIUS = 10;
 const MAP_ZOOM = 17;
 
 // --- [추가됨] Bot configuration ---
-const BOT_NUM = 10; // 화면에 유지할 봇의 수
+const BOT_NUM = 12; // 화면에 유지할 봇의 수
 const BOT_COLOR = "#00ff00"; // 봇 색상 (초록색) - 이제 기본값으로만 사용
 const BOT_SPEED = 0.000004; // [수정됨] 0.000001 -> 0.000004 (봇 속도 밸런스 조정)
 // const BOT_FOOD_DROP_COUNT = 5; // [제거됨] 봇 점수에 비례하도록 변경
@@ -511,8 +511,8 @@ function updateBots() {
 
       // 2. '현재 방향'을 '바라볼 방향'으로 5%씩 보간 (Lerp)
       // current = current * 0.95 + target * 0.05
-      bot.currentDirX = bot.currentDirX * 0.95 + targetDirX * 0.05;
-      bot.currentDirY = bot.currentDirY * 0.95 + targetDirY * 0.05;
+      bot.currentDirX = bot.currentDirX * 0.99 + targetDirX * 0.01;
+      bot.currentDirY = bot.currentDirY * 0.99 + targetDirY * 0.01;
 
       // 3. (중요) 스무딩된 현재 방향을 다시 정규화(Normalize)
       const currentDirMag = Math.sqrt(bot.currentDirX * bot.currentDirX + bot.currentDirY * bot.currentDirY);
