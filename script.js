@@ -107,7 +107,7 @@ function initGame(centerLat, centerLng) {
   updateHUD();
 
   // Show game HUD
-  document.getElementById("game-hud").style.display = "block";
+  document.getElementById("game-hud").style.display = "grid";
   document.getElementById("game-over").style.display = "none";
 
   // Set snake color to bright red

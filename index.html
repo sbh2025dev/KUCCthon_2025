@@ -136,6 +136,31 @@
         box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
         font-size: 1.2rem;
         font-weight: bold;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .game-hud .stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        color: #ffffff;
+      }
+
+      .game-hud .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #c4ff61;
+        margin-bottom: 5px;
+      }
+
+      .game-hud .stat-label {
+        font-size: 0.8rem;
+        font-weight: normal;
+        color: #ffffff;
+        opacity: 0.9;
       }
 
       .game-hud .score {
