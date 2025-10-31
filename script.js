@@ -3,11 +3,6 @@ let map;
 let marker;
 let accuracyCircle;
 
-// GPS averaging to reduce jitter
-const GPS_HISTORY_SIZE = 10;
-let latHistory = [];
-let lngHistory = [];
-
 // Game variables
 let snake = [];
 let snakePolyline = null;
@@ -389,27 +384,9 @@ function updateLocation() {
   navigator.geolocation.getCurrentPosition(
     // Success callback
     (position) => {
-      const rawLat = position.coords.latitude;
-      const rawLng = position.coords.longitude;
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
       const accuracy = position.coords.accuracy;
-
-      // Add to history for averaging
-      latHistory.push(rawLat);
-      lngHistory.push(rawLng);
-
-      // Keep only last GPS_HISTORY_SIZE values
-      if (latHistory.length > GPS_HISTORY_SIZE) {
-        latHistory.shift();
-      }
-      if (lngHistory.length > GPS_HISTORY_SIZE) {
-        lngHistory.shift();
-      }
-
-      // Calculate averaged position
-      const lat =
-        latHistory.reduce((sum, val) => sum + val, 0) / latHistory.length;
-      const lng =
-        lngHistory.reduce((sum, val) => sum + val, 0) / lngHistory.length;
 
       // Initialize map if not already done
       if (!map) {
