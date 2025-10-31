@@ -30,9 +30,16 @@ const MAP_ZOOM = 17;
 
 // Color palette for snake
 const SNAKE_COLORS = [
-  "#ff0000", // bright red
+  "#667eea",
+  "#764ba2",
+  "#f093fb",
+  "#4facfe",
+  "#00f2fe",
+  "#43e97b",
+  "#fa709a",
+  "#fee140",
 ];
-let currentSnakeColor = SNAKE_COLORS[0];
+let currentSnakeColor = "#ff0000";
 
 // Initialize map with a default view
 function initMap(lat = 37.7749, lng = -122.4194, zoom = MAP_ZOOM) {
@@ -87,10 +94,8 @@ function initGame(centerLat, centerLng) {
   document.getElementById("game-hud").style.display = "block";
   document.getElementById("game-over").style.display = "none";
 
-  // Pick random snake color
-  currentSnakeColor =
-    SNAKE_COLORS[Math.floor(Math.random() * SNAKE_COLORS.length)];
-
+  // Set snake color to bright red
+  currentSnakeColor = "#ff0000";
   // Start game loop
   gameActive = true;
   gameLoop();
