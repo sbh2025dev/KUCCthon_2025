@@ -419,6 +419,15 @@ function updateLocation() {
         weight: 1,
       }).addTo(map);
 
+      // add center marker
+      const centerMarker = L.circle([lat, lng], {
+        radius: 10,
+        color: "#667eea",
+        fillColor: "#667eea",
+        fillOpacity: 1,
+        weight: 2,
+      }).addTo(map);
+
       // Update info panel
       updateLocationDisplay(lat, lng, accuracy);
       document.getElementById("info-panel").style.display = "block";
