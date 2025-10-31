@@ -5,6 +5,7 @@ let accuracyCircle;
 
 // --- [수정됨] Game variables ---
 let playerSnake = []; // 'snake'에서 'playerSnake'로 이름 변경
+let playerNameLabel = null;
 let playerSnakePolyline = null; // 'snakePolyline'에서 이름 변경
 let playerSnakeCircles = []; // 'snakeCircles'에서 이름 변경
 let bots = []; // AI 봇들을 저장할 배열
@@ -139,6 +140,10 @@ function clearGame() {
   // Remove player snake circles
   playerSnakeCircles.forEach((circle) => map.removeLayer(circle));
   playerSnakeCircles = [];
+  if (playerNameLabel) {
+    map.removeLayer(playerNameLabel);
+    playerNameLabel = null;
+  }
 
   // [수정됨] 봇 레이어 제거 및 배열 초기화 (유령 봇 버그 수정)
   bots.forEach((bot) => clearBotLayers(bot));
@@ -455,6 +460,9 @@ function renderPlayer() {
   if (playerSnakePolyline) {
     map.removeLayer(playerSnakePolyline);
   }
+  if (playerNameLabel) {
+    map.removeLayer(playerNameLabel);
+  }
 
   // Remove old circles
   playerSnakeCircles.forEach((circle) => map.removeLayer(circle));
@@ -483,6 +491,17 @@ function renderPlayer() {
     weight: 2,
   }).addTo(map);
   playerSnakeCircles.push(headCircle);
+  const playerName = localStorage.getItem("playerName") || "Player";
+
+  playerNameLabel = L.tooltip({
+    permanent: true,
+    direction: "top",
+    offset: [0, -10], // 머리 원반 위로 살짝 띄움
+    className: "player-name-label", // game.html에 추가한 CSS 클래스
+  })
+    .setLatLng([head.lat, head.lng]) // 머리 위치에
+    .setContent(playerName) // 저장된 닉네임 표시
+    .addTo(map);
 }
 
 // --- [수정됨] Bot Snake 로직 ---
