@@ -153,7 +153,7 @@ function clearBotLayers(bot) {
     map.removeLayer(bot.polyline);
   }
   bot.circles.forEach((circle) => map.removeLayer(circle));
-  
+
   // [추가됨] 이름표 제거
   if (bot.nameLabel) {
     map.removeLayer(bot.nameLabel);
@@ -255,8 +255,8 @@ function spawnBot(centerLat, centerLng) {
     target: null, // AI 목표물 (food 객체 또는 랜덤 좌표)
     score: 0, // 봇의 점수(길이)
     color: generateBotColor(), // [수정됨] 봇마다 고유 색상 부여
-    mode: 'FOOD', // [추가됨] 봇의 AI 모드 ('FOOD' 또는 'RANDOM')
-    name: 'Bot ' + botCounter, // [추가됨] 봇 이름
+    mode: "FOOD", // [추가됨] 봇의 AI 모드 ('FOOD' 또는 'RANDOM')
+    name: "Bot " + botCounter, // [추가됨] 봇 이름
     nameLabel: null, // [추가됨] 봇 이름표 레이어
     currentDirX: 0, // [추가됨] 현재 이동 방향 X (부드러운 회전용)
     currentDirY: -1, // [추가됨] 현재 이동 방향 Y (초기값 남쪽)
@@ -293,30 +293,28 @@ function generateBotColor() {
 
 // --- [추가됨] 봇 AI 모드 변경 ---
 function changeBotMode(bot) {
-  if (bot.mode === 'FOOD') {
+  if (bot.mode === "FOOD") {
     // 1. 랜덤 모드로 변경
-    bot.mode = 'RANDOM';
-    
+    bot.mode = "RANDOM";
+
     // 2. 랜덤 타겟 설정 (먼 거리의 임의 좌표)
     if (!bot.snake || bot.snake.length === 0) return; // 방어 코드
     const head = bot.snake[0];
     const angle = Math.random() * 2 * Math.PI; // 0~360도 랜덤 각도
     const randomDist = 0.05; // 맵 상에서 이동할 랜덤 거리 (조정 가능)
-    
+
     const targetLat = head.lat + Math.sin(angle) * randomDist;
     const targetLng = head.lng + Math.cos(angle) * randomDist;
-    
-    bot.target = { lat: targetLat, lng: targetLng, id: 'RANDOM_TARGET' }; // id 추가
-    
+
+    bot.target = { lat: targetLat, lng: targetLng, id: "RANDOM_TARGET" }; // id 추가
   } else {
     // 1. 밥 모드로 변경
-    bot.mode = 'FOOD';
+    bot.mode = "FOOD";
     // 2. 타겟 초기화 (findBotTarget이 새 밥을 찾도록)
     bot.target = null;
   }
 }
 // --- [추가 끝] ---
-
 
 // --- Player Snake 로직 ---
 
@@ -478,7 +476,6 @@ function renderPlayer() {
 // 맵 상의 봇들을 업데이트
 function updateBots() {
   bots.forEach((bot) => {
-    
     // [수정] 봇이 snake 데이터를 잃었으면 (예: 이전 프레임에서 오류 발생) 무시
     if (!bot.snake || bot.snake.length === 0) return;
 
@@ -488,14 +485,14 @@ function updateBots() {
     }
 
     // 2. [MODIFIED] AI 모드에 따라 타겟 설정 (매 틱)
-    if (bot.mode === 'FOOD') {
+    if (bot.mode === "FOOD") {
       findBotTarget(bot); // 밥 모드일 때만 밥 탐색
     }
-    
+
     // --- [수정됨] 봇 방향 스무딩 (매 틱) ---
     if (bot.target) {
       const head = bot.snake[0];
-      
+
       // 1. '바라볼 방향' (Target Direction) 계산
       const targetDx = bot.target.lng - head.lng;
       const targetDy = bot.target.lat - head.lat;
@@ -504,7 +501,8 @@ function updateBots() {
       let targetDirX = bot.currentDirX; // 타겟이 없으면 현재 방향 유지
       let targetDirY = bot.currentDirY;
 
-      if (dist > 0.00001) { // 타겟이 너무 가깝지 않으면
+      if (dist > 0.00001) {
+        // 타겟이 너무 가깝지 않으면
         targetDirX = targetDx / dist; // '바라볼 방향' X
         targetDirY = targetDy / dist; // '바라볼 방향' Y
       }
@@ -515,14 +513,16 @@ function updateBots() {
       bot.currentDirY = bot.currentDirY * 0.99 + targetDirY * 0.01;
 
       // 3. (중요) 스무딩된 현재 방향을 다시 정규화(Normalize)
-      const currentDirMag = Math.sqrt(bot.currentDirX * bot.currentDirX + bot.currentDirY * bot.currentDirY);
+      const currentDirMag = Math.sqrt(
+        bot.currentDirX * bot.currentDirX + bot.currentDirY * bot.currentDirY
+      );
       if (currentDirMag > 0) {
-          bot.currentDirX /= currentDirMag;
-          bot.currentDirY /= currentDirMag;
+        bot.currentDirX /= currentDirMag;
+        bot.currentDirY /= currentDirMag;
       }
 
       // 4. [MODIFIED] 랜덤 모드 타겟 도달 시 모드 변경 (여기서 확인)
-      if (bot.mode === 'RANDOM' && dist < 0.00015) {
+      if (bot.mode === "RANDOM" && dist < 0.00015) {
         changeBotMode(bot); // 밥 모드로 강제 변경
       }
     }
@@ -531,7 +531,7 @@ function updateBots() {
     // 3. [EXISTING] 10% 확률로 이동 및 상호작용
     if (Math.random() < 0.1) {
       moveBot(bot); // [MODIFIED] moveBot은 이제 bot.currentDirX/Y를 사용
-      checkBotFoodCollision(bot); 
+      checkBotFoodCollision(bot);
       checkBotSelfCollision(bot);
     }
 
@@ -543,7 +543,7 @@ function updateBots() {
 // [AI] 봇의 목표물(가장 가까운 음식) 찾기
 function findBotTarget(bot) {
   // [수정됨] 밥 모드일 때, (타겟이 없거나 || 1% 확률로 타겟 변경)
-  if (bot.mode === 'FOOD' && (!bot.target || Math.random() < 0.01)) {
+  if (bot.mode === "FOOD" && (!bot.target || Math.random() < 0.01)) {
     if (!bot.snake || bot.snake.length === 0) return; // 방어 코드
     let closestFood = null;
     let minDistance = Infinity;
@@ -620,21 +620,21 @@ function checkBotFoodCollision(bot) {
     // 밥과 충돌 감지
     if (dist < 0.00015) {
       // 이 밥이 다른 봇의 타겟이었는지 확인
-      bots.forEach(b => {
-          if (b.target && b.target.id === food.id) {
-              b.target = null; // 타겟 초기화
-          }
+      bots.forEach((b) => {
+        if (b.target && b.target.id === food.id) {
+          b.target = null; // 타겟 초기화
+        }
       });
 
       // 음식 제거
       map.removeLayer(food.circle);
       foodItems.splice(i, 1);
       bot.score++;
-      
+
       const centerLat = bot.snake[0].lat;
       const centerLng = bot.snake[0].lng;
       respawnFood(centerLat, centerLng);
-      
+
       break; // 한 프레임에 하나만 먹음
     }
   }
@@ -663,7 +663,7 @@ function renderBot(bot) {
   if (bot.nameLabel) {
     map.removeLayer(bot.nameLabel);
   }
-  
+
   if (bot.polyline) {
     map.removeLayer(bot.polyline);
   }
@@ -696,13 +696,13 @@ function renderBot(bot) {
   // [추가됨] 이름표 생성
   bot.nameLabel = L.tooltip({
     permanent: true,
-    direction: 'top',
+    direction: "top",
     offset: [0, -10], // 머리 원반 위로 살짝 띄움
-    className: 'bot-name-label' // CSS 클래스 적용
+    className: "bot-name-label", // CSS 클래스 적용
   })
-  .setLatLng([head.lat, head.lng]) // 머리 위치에
-  .setContent(bot.name) // 봇 이름 표시
-  .addTo(map);
+    .setLatLng([head.lat, head.lng]) // 머리 위치에
+    .setContent(bot.name) // 봇 이름 표시
+    .addTo(map);
 }
 
 // --- 상호작용 및 관리 로직 ---
@@ -714,7 +714,7 @@ function killBot(bot, killType) {
 
   // 2. 봇 배열에서 제거 (주의: 이 함수는 checkCollisions 외부에서만 안전하게 호출해야 함)
   // [수정됨] 버그 수정을 위해 checkCollisions에서 이 함수를 직접 호출하지 않음
-  // bots = bots.filter((b) => b.id !== bot.id); 
+  // bots = bots.filter((b) => b.id !== bot.id);
 
   // 3. 봇의 몸통을 음식으로 드랍 [수정됨]
   dropFoodFromSnake(bot);
@@ -730,44 +730,44 @@ function killBot(bot, killType) {
 
 // [수정됨] 뱀 몸통을 점수에 비례하여 음식으로 변환
 function dropFoodFromSnake(bot) {
-    const snakeArray = bot.snake;
-    if (!snakeArray || snakeArray.length === 0) return; // 뱀 데이터가 없으면 중단
+  const snakeArray = bot.snake;
+  if (!snakeArray || snakeArray.length === 0) return; // 뱀 데이터가 없으면 중단
 
-    // 봇이 먹은 밥(score)의 50%만큼 드랍 (최소 1개는 드랍되도록 올림)
-    const foodToDrop = Math.ceil(bot.score * 0.5);
+  // 봇이 먹은 밥(score)의 50%만큼 드랍 (최소 1개는 드랍되도록 올림)
+  const foodToDrop = Math.ceil(bot.score * 0.5);
 
-    // 먹은게 없으면(score 0) 드랍 없음
-    if (foodToDrop <= 0) return;
+  // 먹은게 없으면(score 0) 드랍 없음
+  if (foodToDrop <= 0) return;
 
-    const snakeLength = snakeArray.length;
-    // 뱀 길이를 드랍할 음식 수로 나누어 '간격(step)'을 계산
-    // (간격은 최소 1, 0으로 나눠지는것 방지)
-    const step = Math.max(1, Math.floor(snakeLength / foodToDrop));
+  const snakeLength = snakeArray.length;
+  // 뱀 길이를 드랍할 음식 수로 나누어 '간격(step)'을 계산
+  // (간격은 최소 1, 0으로 나눠지는것 방지)
+  const step = Math.max(1, Math.floor(snakeLength / foodToDrop));
 
-    // 뱀 몸통을 'step' 간격으로 순회하며 음식 드랍
-    for (let i = 0; i < snakeLength; i += step) { 
-        const segment = snakeArray[i];
-        if (!segment) continue; // 배열 인덱스 방어
-        
-        const foodColor = SNAKE_COLORS[Math.floor(Math.random() * SNAKE_COLORS.length)];
-        const circle = L.circle([segment.lat, segment.lng], {
-            radius: FOOD_RADIUS,
-            color: foodColor,
-            fillColor: foodColor,
-            fillOpacity: 0.9,
-            weight: 2,
-        }).addTo(map);
-        
-        foodItems.push({ 
-            id: Date.now() + Math.random(), 
-            lat: segment.lat, 
-            lng: segment.lng, 
-            circle, 
-            color: foodColor 
-        });
-    }
+  // 뱀 몸통을 'step' 간격으로 순회하며 음식 드랍
+  for (let i = 0; i < snakeLength; i += step) {
+    const segment = snakeArray[i];
+    if (!segment) continue; // 배열 인덱스 방어
+
+    const foodColor =
+      SNAKE_COLORS[Math.floor(Math.random() * SNAKE_COLORS.length)];
+    const circle = L.circle([segment.lat, segment.lng], {
+      radius: FOOD_RADIUS,
+      color: foodColor,
+      fillColor: foodColor,
+      fillOpacity: 0.9,
+      weight: 2,
+    }).addTo(map);
+
+    foodItems.push({
+      id: Date.now() + Math.random(),
+      lat: segment.lat,
+      lng: segment.lng,
+      circle,
+      color: foodColor,
+    });
+  }
 }
-
 
 // 킬 메시지 표시
 function showKillMessage(message) {
@@ -788,23 +788,23 @@ function showKillMessage(message) {
 let botSlainMessageTimeout = null;
 
 function showBotSlainMessage(message) {
-    const msgEl = document.getElementById("bot-slain-message");
-    msgEl.textContent = message;
-    msgEl.style.display = "block";
-    msgEl.style.opacity = 1;
+  const msgEl = document.getElementById("bot-slain-message");
+  msgEl.textContent = message;
+  msgEl.style.display = "block";
+  msgEl.style.opacity = 1;
 
-    // 이미 타이머가 있으면 초기화
-    if (botSlainMessageTimeout) {
-        clearTimeout(botSlainMessageTimeout);
-    }
+  // 이미 타이머가 있으면 초기화
+  if (botSlainMessageTimeout) {
+    clearTimeout(botSlainMessageTimeout);
+  }
 
-    // 3초 뒤에 사라지도록 설정 (요청사항)
-    botSlainMessageTimeout = setTimeout(() => {
-        msgEl.style.opacity = 0;
-        setTimeout(() => {
-            msgEl.style.display = "none";
-        }, 500); // 0.5초 fade-out
-    }, 3000); // 3초간 표시
+  // 3초 뒤에 사라지도록 설정 (요청사항)
+  botSlainMessageTimeout = setTimeout(() => {
+    msgEl.style.opacity = 0;
+    setTimeout(() => {
+      msgEl.style.display = "none";
+    }, 500); // 0.5초 fade-out
+  }, 3000); // 3초간 표시
 }
 // --- [수정 끝] ---
 
@@ -813,23 +813,23 @@ function checkCollisions() {
   if (!gameActive || !playerSnake || playerSnake.length === 0) return;
 
   const playerHead = playerSnake[0];
-  
+
   // [수정] 충돌 검사 중 즉시 제거하지 않고, 죽일 봇을 임시 저장
-  const botsToKill = []; 
+  const botsToKill = [];
   const botsToKillTypes = {}; // [수정] 이제 'Player' 또는 'Bot 5' (킬러 이름)를 저장
 
   // 1. 플레이어 vs 봇 몸통 & 봇 vs 플레이어 몸통
   for (let i = bots.length - 1; i >= 0; i--) {
     const bot = bots[i];
-    if (!bot.snake || bot.snake.length < 1) continue; 
+    if (!bot.snake || bot.snake.length < 1) continue;
     const botHead = bot.snake[0];
-    if (!botHead) continue; 
+    if (!botHead) continue;
 
     // 1a. 플레이어 머리 vs 봇 몸통
     for (let j = 5; j < bot.snake.length; j++) {
       const botSegment = bot.snake[j];
-      if (!botSegment) continue; 
-      
+      if (!botSegment) continue;
+
       if (
         distance(
           playerHead.lat,
@@ -839,15 +839,15 @@ function checkCollisions() {
         ) < COLLISION_DISTANCE
       ) {
         gameOver(); // 플레이어 사망은 즉시 게임 종료
-        return; 
+        return;
       }
     }
 
     // 1b. 봇 머리 vs 플레이어 몸통
     for (let j = 5; j < playerSnake.length; j++) {
       const playerSegment = playerSnake[j];
-      if (!playerSegment) continue; 
-      
+      if (!playerSegment) continue;
+
       if (
         distance(
           botHead.lat,
@@ -858,8 +858,8 @@ function checkCollisions() {
       ) {
         // [수정] 즉시 죽이지 않고, 죽일 목록에 추가
         if (!botsToKill.includes(bot)) {
-            botsToKill.push(bot);
-            botsToKillTypes[bot.id] = "Player"; // [수정] 킬러는 'Player'
+          botsToKill.push(bot);
+          botsToKillTypes[bot.id] = "Player"; // [수정] 킬러는 'Player'
         }
         break; // 이 봇은 죽었으므로 다음 봇으로 넘어감
       }
@@ -870,7 +870,8 @@ function checkCollisions() {
   for (let i = bots.length - 1; i >= 0; i--) {
     const botA = bots[i];
     // [수정] 이미 죽일 목록에 있거나 데이터가 없으면 건너뜀
-    if (botsToKill.includes(botA) || !botA.snake || botA.snake.length < 1) continue; 
+    if (botsToKill.includes(botA) || !botA.snake || botA.snake.length < 1)
+      continue;
     const botAHead = botA.snake[0];
     if (!botAHead) continue;
 
@@ -878,13 +879,14 @@ function checkCollisions() {
       if (i === j) continue; // 자기 자신과는 검사 안함
       const botB = bots[j];
       // [수정] 이미 죽일 목록에 있거나 데이터가 없으면 건너뜀
-      if (botsToKill.includes(botB) || !botB.snake || botB.snake.length < 1) continue;
+      if (botsToKill.includes(botB) || !botB.snake || botB.snake.length < 1)
+        continue;
 
       // botA의 머리가 botB의 몸통에 부딪혔는지 검사
       for (let k = 5; k < botB.snake.length; k++) {
         const botBSegment = botB.snake[k];
         if (!botBSegment) continue;
-        
+
         if (
           distance(
             botAHead.lat,
@@ -907,9 +909,9 @@ function checkCollisions() {
 
   // [수정] 모든 충돌 검사가 끝난 후, '죽일 봇 목록'에 있는 봇들을 일괄 처리
   if (botsToKill.length > 0) {
-    botsToKill.forEach(bot => {
+    botsToKill.forEach((bot) => {
       const killerName = botsToKillTypes[bot.id]; // "Player" 또는 "Bot 5"
-      
+
       if (killerName === "Player") {
         killBot(bot, "player_kill"); // 1. 그래픽/밥/점수/메시지(녹색) 처리
       } else {
@@ -919,7 +921,7 @@ function checkCollisions() {
     });
 
     // 3. 봇 배열(데이터)에서 죽은 봇들 일괄 제거
-    bots = bots.filter(bot => !botsToKill.includes(bot));
+    bots = bots.filter((bot) => !botsToKill.includes(bot));
   }
 }
 
@@ -930,10 +932,11 @@ function manageBots() {
 
   for (let i = bots.length - 1; i >= 0; i--) {
     const bot = bots[i];
-    if (!bot.snake || bot.snake.length < 1) { // [수정] 봇 데이터 방어
-        clearBotLayers(bot);
-        bots.splice(i, 1);
-        continue;
+    if (!bot.snake || bot.snake.length < 1) {
+      // [수정] 봇 데이터 방어
+      clearBotLayers(bot);
+      bots.splice(i, 1);
+      continue;
     }
     const botHead = bot.snake[0];
 
@@ -971,7 +974,7 @@ function gameLoop() {
 
 // Update HUD
 function updateHUD() {
-  document.getElementById("score").textContent = score;
+  // document.getElementById("score").textContent = score;
   document.getElementById("length").textContent = playerSnake.length; // 'snake' -> 'playerSnake'
 }
 
