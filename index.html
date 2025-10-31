@@ -210,9 +210,28 @@
         transition: all 0.1s ease;
         box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
       }
+
+      /* Top gradient overlay */
+      .top-gradient {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 80px;
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0.8) 0%,
+          rgba(0, 0, 0, 0.4) 50%,
+          rgba(0, 0, 0, 0) 100%
+        );
+        pointer-events: none;
+        z-index: 999;
+      }
     </style>
   </head>
   <body>
+    <div class="top-gradient"></div>
+
     <div id="loading" class="loading">Getting your location...</div>
 
     <div id="map"></div>
