@@ -3,19 +3,21 @@ let map;
 let marker;
 let accuracyCircle;
 
-// Game variables
-let snake = [];
-let snakePolyline = null;
-let snakeCircles = [];
+// --- [수정됨] Game variables ---
+let playerSnake = []; // 'snake'에서 'playerSnake'로 이름 변경
+let playerSnakePolyline = null; // 'snakePolyline'에서 이름 변경
+let playerSnakeCircles = []; // 'snakeCircles'에서 이름 변경
+let bots = []; // AI 봇들을 저장할 배열
 let foodItems = [];
 let score = 0;
 let gameActive = false;
-let mouseTarget = null;
+let mouseTarget = null; // 플레이어 뱀의 목표 (GPS)
 let animationFrame = null;
+// --- [수정 끝] ---
 
 // Game configuration
 const INITIAL_SNAKE_LENGTH = 5;
-const SNAKE_SPEED = 0.000008; // degrees per frame
+const SNAKE_SPEED = 0.000008; // (롤백된) 고정 속도
 const SNAKE_SEGMENT_DISTANCE = 0.000005; // distance between segments
 const FOOD_COUNT = 200;
 const SNAKE_WIDTH = 10;
@@ -23,8 +25,16 @@ const SNAKE_HEAD_RADIUS = 5;
 const FOOD_RADIUS = 10;
 const MAP_ZOOM = 17;
 
+// --- [추가됨] Bot configuration ---
+const BOT_NUM = 5; // 화면에 유지할 봇의 수
+const BOT_COLOR = "#00ff00"; // 봇 색상 (초록색)
+const BOT_SPEED = 0.000008; // 봇 이동 속도
+const BOT_FOOD_DROP_COUNT = 5; // 봇 사망 시 드랍할 음식 수
+const COLLISION_DISTANCE = 0.00008; // 충돌 감지 거리
+// --- [추가 끝] ---
+
 // Moving average configuration for GPS smoothing
-const GPS_SMOOTHING_WINDOW = 5; // Number of readings to average
+const GPS_SMOOTHING_WINDOW = 3; // (기존 5에서 3으로 수정됨 - 반응 속도 향상)
 let latReadings = [];
 let lngReadings = [];
 
@@ -71,10 +81,10 @@ function initGame(centerLat, centerLng) {
   // Clear existing game elements
   clearGame();
 
-  // Initialize snake in the center
-  snake = [];
+  // Initialize player snake in the center
+  playerSnake = [];
   for (let i = 0; i < INITIAL_SNAKE_LENGTH; i++) {
-    snake.push({
+    playerSnake.push({
       lat: centerLat - i * SNAKE_SEGMENT_DISTANCE,
       lng: centerLng,
     });
@@ -85,6 +95,9 @@ function initGame(centerLat, centerLng) {
 
   // Spawn food
   spawnFood(centerLat, centerLng);
+
+  // [추가됨] Spawn initial bots
+  spawnInitialBots(centerLat, centerLng);
 
   // Reset score
   score = 0;
@@ -103,15 +116,19 @@ function initGame(centerLat, centerLng) {
 
 // Clear game elements
 function clearGame() {
-  // Remove snake polyline
-  if (snakePolyline) {
-    map.removeLayer(snakePolyline);
-    snakePolyline = null;
+  // Remove player snake polyline
+  if (playerSnakePolyline) {
+    map.removeLayer(playerSnakePolyline);
+    playerSnakePolyline = null;
   }
 
-  // Remove snake circles
-  snakeCircles.forEach((circle) => map.removeLayer(circle));
-  snakeCircles = [];
+  // Remove player snake circles
+  playerSnakeCircles.forEach((circle) => map.removeLayer(circle));
+  playerSnakeCircles = [];
+
+  // [추가됨] Remove bot snakes
+  bots.forEach((bot) => clearBotLayers(bot));
+  bots = [];
 
   // Remove food items
   foodItems.forEach((food) => map.removeLayer(food.circle));
@@ -122,6 +139,14 @@ function clearGame() {
     cancelAnimationFrame(animationFrame);
     animationFrame = null;
   }
+}
+
+// [추가됨] Bot의 Leaflet 레이어 제거
+function clearBotLayers(bot) {
+  if (bot.polyline) {
+    map.removeLayer(bot.polyline);
+  }
+  bot.circles.forEach((circle) => map.removeLayer(circle));
 }
 
 // Spawn food items
@@ -172,6 +197,44 @@ function respawnFood(centerLat, centerLng) {
   foodItems.push({ lat, lng, circle, color: foodColor });
 }
 
+// [추가됨] 초기 봇 스폰
+function spawnInitialBots(centerLat, centerLng) {
+  for (let i = 0; i < BOT_NUM; i++) {
+    spawnBot(centerLat, centerLng);
+  }
+}
+
+// [추가됨] 단일 봇 스폰
+function spawnBot(centerLat, centerLng) {
+  const mapBounds = map.getBounds();
+  const latRange = mapBounds.getNorth() - mapBounds.getSouth();
+  const lngRange = mapBounds.getEast() - mapBounds.getWest();
+
+  // 스폰 위치 랜덤화
+  const lat = centerLat + (Math.random() - 0.5) * latRange * 0.8;
+  const lng = centerLng + (Math.random() - 0.5) * lngRange * 0.8;
+
+  let botSnake = [];
+  for (let i = 0; i < INITIAL_SNAKE_LENGTH; i++) {
+    botSnake.push({
+      lat: lat - i * SNAKE_SEGMENT_DISTANCE,
+      lng: lng,
+    });
+  }
+
+  const bot = {
+    id: Date.now() + Math.random(), // 고유 ID
+    snake: botSnake,
+    polyline: null,
+    circles: [],
+    target: null, // AI 목표물
+    score: 0, // 봇의 점수(길이)
+    color: BOT_COLOR,
+  };
+
+  bots.push(bot);
+}
+
 // Calculate distance between two points
 function distance(lat1, lng1, lat2, lng2) {
   const dLat = lat2 - lat1;
@@ -179,11 +242,14 @@ function distance(lat1, lng1, lat2, lng2) {
   return Math.sqrt(dLat * dLat + dLng * dLng);
 }
 
-// Update snake position
-function updateSnake() {
+// --- [수정됨] Player Snake 로직 ---
+// (기존 updateSnake, checkSelfCollision, checkFoodCollision, renderSnake)
+
+// Update [PLAYER] snake position
+function updatePlayer() {
   if (!gameActive || !mouseTarget) return;
 
-  const head = snake[0];
+  const head = playerSnake[0];
 
   // Calculate direction to mouse target
   const dx = mouseTarget.lng - head.lng;
@@ -202,20 +268,20 @@ function updateSnake() {
     };
 
     // Add new head
-    snake.unshift(newHead);
+    playerSnake.unshift(newHead);
 
     // Update remaining segments to follow
-    for (let i = 1; i < snake.length; i++) {
-      const current = snake[i];
-      const previous = snake[i - 1];
+    for (let i = 1; i < playerSnake.length; i++) {
+      const current = playerSnake[i];
+      const previous = playerSnake[i - 1];
 
       const dx = previous.lng - current.lng;
       const dy = previous.lat - current.lat;
       const segDist = Math.sqrt(dx * dx + dy * dy);
 
-      if (segDist > 0.001) {
+      if (segDist > 0) { // 0.001 -> 0
         const ratio = SNAKE_SEGMENT_DISTANCE / segDist;
-        snake[i] = {
+        playerSnake[i] = {
           lat: previous.lat - dy * ratio,
           lng: previous.lng - dx * ratio,
         };
@@ -223,30 +289,29 @@ function updateSnake() {
     }
 
     // Remove tail if no growth needed
-    if (snake.length > (INITIAL_SNAKE_LENGTH + score) * 10) {
-      snake.pop();
+    if (playerSnake.length > (INITIAL_SNAKE_LENGTH + score) * 10) {
+      playerSnake.pop();
     }
   }
 
   // Check food collision
-  checkFoodCollision();
+  checkPlayerFoodCollision();
 
   // Check self collision
-  checkSelfCollision();
+  checkPlayerSelfCollision();
 
   // Render snake
-  renderSnake();
+  renderPlayer();
 }
 
-// Check collision with food
-function checkFoodCollision() {
-  const head = snake[0];
+// Check [PLAYER] collision with food
+function checkPlayerFoodCollision() {
+  const head = playerSnake[0];
 
   for (let i = foodItems.length - 1; i >= 0; i--) {
     const food = foodItems[i];
     const dist = distance(head.lat, head.lng, food.lat, food.lng);
 
-    // Collision detected (in degrees, roughly equivalent to visual collision)
     if (dist < 0.00015) {
       // Remove food
       map.removeLayer(food.circle);
@@ -257,48 +322,47 @@ function checkFoodCollision() {
       updateHUD();
 
       // Spawn new food
-      const centerLat = snake[0].lat;
-      const centerLng = snake[0].lng;
+      const centerLat = playerSnake[0].lat;
+      const centerLng = playerSnake[0].lng;
       respawnFood(centerLat, centerLng);
 
-      // Add segments to snake (will grow naturally)
       break;
     }
   }
 }
 
-// Check collision with self
-function checkSelfCollision() {
-  if (snake.length < 1000) return; // Too short to collide with self
+// Check [PLAYER] collision with self
+function checkPlayerSelfCollision() {
+  if (playerSnake.length < 10) return; // 1000 -> 10
 
-  const head = snake[0];
+  const head = playerSnake[0];
 
   // Check collision with body (skip first few segments)
-  for (let i = 5; i < snake.length; i++) {
-    const segment = snake[i];
+  for (let i = 5; i < playerSnake.length; i++) {
+    const segment = playerSnake[i];
     const dist = distance(head.lat, head.lng, segment.lat, segment.lng);
 
-    if (dist < 0.00008) {
+    if (dist < COLLISION_DISTANCE) {
       gameOver();
       return;
     }
   }
 }
 
-// Render snake on map
-function renderSnake() {
+// Render [PLAYER] snake on map
+function renderPlayer() {
   // Remove old polyline
-  if (snakePolyline) {
-    map.removeLayer(snakePolyline);
+  if (playerSnakePolyline) {
+    map.removeLayer(playerSnakePolyline);
   }
 
   // Remove old circles
-  snakeCircles.forEach((circle) => map.removeLayer(circle));
-  snakeCircles = [];
+  playerSnakeCircles.forEach((circle) => map.removeLayer(circle));
+  playerSnakeCircles = [];
 
   // Draw snake body as polyline
-  const coords = snake.map((s) => [s.lat, s.lng]);
-  snakePolyline = L.polyline(coords, {
+  const coords = playerSnake.map((s) => [s.lat, s.lng]);
+  playerSnakePolyline = L.polyline(coords, {
     color: currentSnakeColor,
     weight: SNAKE_WIDTH,
     opacity: 0.8,
@@ -308,7 +372,7 @@ function renderSnake() {
   }).addTo(map);
 
   // Draw head as larger circle
-  const head = snake[0];
+  const head = playerSnake[0];
   const headCircle = L.circle([head.lat, head.lng], {
     radius: SNAKE_HEAD_RADIUS,
     color: currentSnakeColor,
@@ -316,21 +380,332 @@ function renderSnake() {
     fillOpacity: 1,
     weight: 2,
   }).addTo(map);
-  snakeCircles.push(headCircle);
+  playerSnakeCircles.push(headCircle);
 }
 
-// Game loop
+// --- [추가됨] Bot Snake 로직 ---
+
+// 맵 상의 봇들을 업데이트
+function updateBots() {
+  bots.forEach((bot) => {
+    // 1. AI로 목표물 찾기
+    findBotTarget(bot);
+    // 2. 목표물로 이동
+    moveBot(bot);
+    // 3. 봇 음식 섭취 확인
+    checkBotFoodCollision(bot);
+    // 4. 봇 자살 확인
+    checkBotSelfCollision(bot);
+    // 5. 봇 렌더링
+    renderBot(bot);
+  });
+}
+
+// [AI] 봇의 목표물(가장 가까운 음식) 찾기
+function findBotTarget(bot) {
+  // 목표물이 없거나, 1% 확률로 목표물 재탐색
+  if (!bot.target || Math.random() < 0.01) {
+    let closestFood = null;
+    let minDistance = Infinity;
+    const botHead = bot.snake[0];
+
+    for (const food of foodItems) {
+      const dist = distance(botHead.lat, botHead.lng, food.lat, food.lng);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestFood = food;
+      }
+    }
+
+    if (closestFood) {
+      bot.target = { lat: closestFood.lat, lng: closestFood.lng };
+    }
+  }
+}
+
+// 봇의 뱀을 목표물로 이동
+function moveBot(bot) {
+  if (!bot.target) return;
+
+  const head = bot.snake[0];
+
+  // Calculate direction to target
+  const dx = bot.target.lng - head.lng;
+  const dy = bot.target.lat - head.lat;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+
+  if (dist < 0.00015) {
+      // 목표물에 도달하면 목표물 초기화 (다음 프레임에 재탐색)
+      bot.target = null;
+  }
+
+  if (dist > 0.00001) {
+    // Normalize direction
+    const dirX = dx / dist;
+    const dirY = dy / dist;
+
+    // Move head towards target
+    const newHead = {
+      lat: head.lat + dirY * BOT_SPEED,
+      lng: head.lng + dirX * BOT_SPEED,
+    };
+
+    // Add new head
+    bot.snake.unshift(newHead);
+
+    // Update remaining segments
+    for (let i = 1; i < bot.snake.length; i++) {
+      const current = bot.snake[i];
+      const previous = bot.snake[i - 1];
+      const dxSeg = previous.lng - current.lng;
+      const dySeg = previous.lat - current.lat;
+      const segDist = Math.sqrt(dxSeg * dxSeg + dySeg * dySeg);
+
+      if (segDist > 0) {
+        const ratio = SNAKE_SEGMENT_DISTANCE / segDist;
+        bot.snake[i] = {
+          lat: previous.lat - dySeg * ratio,
+          lng: previous.lng - dxSeg * ratio,
+        };
+      }
+    }
+
+    // Remove tail
+    if (bot.snake.length > (INITIAL_SNAKE_LENGTH + bot.score) * 10) {
+      bot.snake.pop();
+    }
+  }
+}
+
+// 봇과 음식 충돌 확인
+function checkBotFoodCollision(bot) {
+  const head = bot.snake[0];
+
+  for (let i = foodItems.length - 1; i >= 0; i--) {
+    const food = foodItems[i];
+    const dist = distance(head.lat, head.lng, food.lat, food.lng);
+
+    if (dist < 0.00015) {
+      map.removeLayer(food.circle);
+      foodItems.splice(i, 1);
+      bot.score++;
+
+      // 봇이 음식을 먹으면 즉시 목표물 초기화 (새로 찾도록)
+      bot.target = null;
+      
+      const centerLat = bot.snake[0].lat;
+      const centerLng = bot.snake[0].lng;
+      respawnFood(centerLat, centerLng);
+      break;
+    }
+  }
+}
+
+// 봇 자살 충돌 확인
+function checkBotSelfCollision(bot) {
+  if (bot.snake.length < 10) return;
+
+  const head = bot.snake[0];
+  for (let i = 5; i < bot.snake.length; i++) {
+    const segment = bot.snake[i];
+    const dist = distance(head.lat, head.lng, segment.lat, segment.lng);
+
+    if (dist < COLLISION_DISTANCE) {
+      killBot(bot, "suicide"); // 자살
+      return;
+    }
+  }
+}
+
+// 봇 렌더링
+function renderBot(bot) {
+  if (bot.polyline) {
+    map.removeLayer(bot.polyline);
+  }
+  bot.circles.forEach((circle) => map.removeLayer(circle));
+  bot.circles = [];
+
+  const coords = bot.snake.map((s) => [s.lat, s.lng]);
+  bot.polyline = L.polyline(coords, {
+    color: bot.color,
+    weight: SNAKE_WIDTH,
+    opacity: 0.8,
+    smoothFactor: 1,
+    lineCap: "round",
+    lineJoin: "round",
+  }).addTo(map);
+
+  const head = bot.snake[0];
+  const headCircle = L.circle([head.lat, head.lng], {
+    radius: SNAKE_HEAD_RADIUS,
+    color: bot.color,
+    fillColor: bot.color,
+    fillOpacity: 1,
+    weight: 2,
+  }).addTo(map);
+  bot.circles.push(headCircle);
+}
+
+
+// --- [추가됨] 상호작용 및 관리 로직 ---
+
+// 뱀 사망 처리 (봇)
+function killBot(bot, killType) {
+  // 1. 맵에서 봇 레이어 제거
+  clearBotLayers(bot);
+
+  // 2. 봇 배열에서 제거
+  bots = bots.filter(b => b.id !== bot.id);
+
+  // 3. 봇의 몸통을 음식으로 드랍
+  dropFoodFromSnake(bot.snake);
+
+  // 4. 플레이어가 죽인 경우, 점수 추가 및 메시지 표시
+  if (killType === "player_kill") {
+    const bonusScore = 10; // 킬 보너스 점수
+    score += bonusScore;
+    updateHUD();
+    showKillMessage(`🐍 Bot Killed! +${bonusScore} Score`);
+  }
+}
+
+// 뱀 몸통을 음식으로 변환
+function dropFoodFromSnake(snakeArray) {
+    // 성능을 위해 뱀의 모든 마디가 아닌, 일부만 음식으로 드랍
+    for (let i = 0; i < snakeArray.length; i += 10) { 
+        if (i > BOT_FOOD_DROP_COUNT * 10) break; // 최대 드랍 수
+        
+        const segment = snakeArray[i];
+        const foodColor = SNAKE_COLORS[Math.floor(Math.random() * SNAKE_COLORS.length)];
+        const circle = L.circle([segment.lat, segment.lng], {
+            radius: FOOD_RADIUS, // 일반 음식보다 약간 크게
+            color: foodColor,
+            fillColor: foodColor,
+            fillOpacity: 0.9,
+            weight: 2,
+        }).addTo(map);
+        foodItems.push({ lat: segment.lat, lng: segment.lng, circle, color: foodColor });
+    }
+}
+
+
+// 킬 메시지 표시
+function showKillMessage(message) {
+    const msgEl = document.getElementById("kill-message");
+    msgEl.textContent = message;
+    msgEl.style.display = "block";
+    msgEl.style.opacity = 1;
+
+    setTimeout(() => {
+        msgEl.style.opacity = 0;
+        setTimeout(() => {
+            msgEl.style.display = "none";
+        }, 500); // 0.5초 뒤에 숨김
+    }, 2000); // 2초간 표시
+}
+
+
+// 모든 뱀들 간의 충돌 확인
+function checkCollisions() {
+    if (!gameActive || !playerSnake[0]) return;
+
+    const playerHead = playerSnake[0];
+
+    // 1. 플레이어 vs 봇 몸통 & 봇 vs 플레이어 몸통
+    for (let i = bots.length - 1; i >= 0; i--) {
+        const bot = bots[i];
+        if (!bot.snake[0]) continue;
+        
+        const botHead = bot.snake[0];
+
+        // 1a. 플레이어 머리 vs 봇 몸통
+        for (let j = 5; j < bot.snake.length; j++) {
+            const botSegment = bot.snake[j];
+            if (distance(playerHead.lat, playerHead.lng, botSegment.lat, botSegment.lng) < COLLISION_DISTANCE) {
+                gameOver();
+                return; // 플레이어가 죽었으므로 모든 충돌 검사 중지
+            }
+        }
+
+        // 1b. 봇 머리 vs 플레이어 몸통
+        for (let j = 5; j < playerSnake.length; j++) {
+            const playerSegment = playerSnake[j];
+            if (distance(botHead.lat, botHead.lng, playerSegment.lat, playerSegment.lng) < COLLISION_DISTANCE) {
+                killBot(bot, "player_kill");
+                break; // 이 봇은 죽었으므로 다음 봇으로 넘어감
+            }
+        }
+    }
+
+    // 2. 봇 vs 봇 (N^2 검사)
+    for (let i = bots.length - 1; i >= 0; i--) {
+        const botA = bots[i];
+        if (!botA) continue; // 이미 죽었을 수 있음
+        const botAHead = botA.snake[0];
+
+        for (let j = bots.length - 1; j >= 0; j--) {
+            if (i === j) continue; // 자기 자신과는 검사 안함
+            const botB = bots[j];
+            if (!botB) continue;
+
+            // botA의 머리가 botB의 몸통에 부딪혔는지 검사
+            for (let k = 5; k < botB.snake.length; k++) {
+                const botBSegment = botB.snake[k];
+                if (distance(botAHead.lat, botAHead.lng, botBSegment.lat, botBSegment.lng) < COLLISION_DISTANCE) {
+                    killBot(botA, "bot_kill");
+                    break; // botA는 죽었음.
+                }
+            }
+            if (!bots.includes(botA)) break; // botA가 죽었으면 내부 루프 탈출
+        }
+    }
+}
+
+// 봇 개체 수 관리 (맵 이탈 및 리스폰)
+function manageBots() {
+    const bounds = map.getBounds();
+    const padding = 0.01; // 맵 바깥 여유분
+
+    for (let i = bots.length - 1; i >= 0; i--) {
+        const bot = bots[i];
+        const botHead = bot.snake[0];
+
+        // 맵 바깥으로 완전히 나갔는지 확인
+        if (botHead.lat > bounds.getNorth() + padding ||
+            botHead.lat < bounds.getSouth() - padding ||
+            botHead.lng > bounds.getEast() + padding ||
+            botHead.lng < bounds.getWest() - padding) 
+        {
+            // 디스폰 (음식 드랍 없음)
+            clearBotLayers(bot);
+            bots.splice(i, 1);
+        }
+    }
+
+    // 봇 개체 수가 부족하면 리스폰
+    while (bots.length < BOT_NUM) {
+        const center = map.getCenter();
+        spawnBot(center.lat, center.lng);
+    }
+}
+
+
+// --- [수정됨] Game loop ---
 function gameLoop() {
   if (!gameActive) return;
 
-  updateSnake();
+  updatePlayer(); // 플레이어 업데이트
+  updateBots();   // [추가] 봇 업데이트
+  checkCollisions(); // [추가] 상호 충돌 검사
+  manageBots();   // [추가] 봇 개체 수 관리
+
   animationFrame = requestAnimationFrame(gameLoop);
 }
 
 // Update HUD
 function updateHUD() {
   document.getElementById("score").textContent = score;
-  document.getElementById("length").textContent = snake.length;
+  document.getElementById("length").textContent = playerSnake.length; // 'snake' -> 'playerSnake'
 }
 
 // Game over
@@ -339,11 +714,12 @@ function gameOver() {
 
   if (animationFrame) {
     cancelAnimationFrame(animationFrame);
+    animationFrame = null;
   }
 
   // Show game over screen
   document.getElementById("final-score").textContent = score;
-  document.getElementById("final-length").textContent = snake.length;
+  document.getElementById("final-length").textContent = playerSnake.length; // 'snake' -> 'playerSnake'
   document.getElementById("game-over").style.display = "block";
 }
 
@@ -508,45 +884,8 @@ function updateLocation() {
   );
 }
 
-// Mouse move handler - DISABLED: Snake now tracks GPS position
-// document.addEventListener("mousemove", (e) => {
-//   // Update cursor indicator position
-//   const cursorIndicator = document.getElementById("cursor-indicator");
-//   cursorIndicator.style.left = e.clientX + "px";
-//   cursorIndicator.style.top = e.clientY + "px";
-
-//   // Convert mouse position to map coordinates
-//   if (map) {
-//     const mapContainer = map.getContainer();
-//     const rect = mapContainer.getBoundingClientRect();
-//     const x = e.clientX - rect.left;
-//     const y = e.clientY - rect.top;
-//     const point = map.containerPointToLatLng([x, y]);
-//     mouseTarget = { lat: point.lat, lng: point.lng };
-//   }
-// });
-
-// Touch move handler for mobile - DISABLED: Snake now tracks GPS position
-// document.addEventListener("touchmove", (e) => {
-//   if (e.touches.length > 0) {
-//     const touch = e.touches[0];
-
-//     // Update cursor indicator position
-//     const cursorIndicator = document.getElementById("cursor-indicator");
-//     cursorIndicator.style.left = touch.clientX + "px";
-//     cursorIndicator.style.top = touch.clientY + "px";
-
-//     // Convert touch position to map coordinates
-//     if (map) {
-//       const mapContainer = map.getContainer();
-//       const rect = mapContainer.getBoundingClientRect();
-//       const x = touch.clientX - rect.left;
-//       const y = touch.clientY - rect.top;
-//       const point = map.containerPointToLatLng([x, y]);
-//       mouseTarget = { lat: point.lat, lng: point.lng };
-//     }
-//   }
-// });
+// Mouse/Touch handlers (DISABLED)
+// ... (기존과 동일) ...
 
 // Initialize on page load
 window.addEventListener("load", () => {
