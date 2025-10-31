@@ -384,9 +384,13 @@ function updateLocation() {
   navigator.geolocation.getCurrentPosition(
     // Success callback
     (position) => {
+      const accuracy = position.coords.accuracy;
+      if (accuracy > 20) {
+        return; // Skip if accuracy is over 20
+      }
+
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
-      const accuracy = position.coords.accuracy;
 
       // Initialize map if not already done
       if (!map) {
