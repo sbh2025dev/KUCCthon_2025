@@ -49,11 +49,12 @@ function initMap(lat = 37.7749, lng = -122.4194, zoom = MAP_ZOOM) {
       attributionControl: true,
     }).setView([lat, lng], zoom);
 
-    // Add OpenStreetMap tile layer
+    // Add OpenStreetMap tile layer with dark mode filter
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
+      className: "map-tiles-dark",
     }).addTo(map);
 
     // Disable map dragging and zooming during gameplay

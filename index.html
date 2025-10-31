@@ -42,6 +42,12 @@
         cursor: none;
       }
 
+      /* Dark mode filter for map tiles */
+      .map-tiles-dark {
+        filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%)
+          saturate(70%);
+      }
+
       .info-panel {
         position: absolute;
         top: 80px;
