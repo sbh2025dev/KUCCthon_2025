@@ -27,11 +27,11 @@ const FOOD_RADIUS = 10;
 const MAP_ZOOM = 17;
 
 // --- [추가됨] Bot configuration ---
-const BOT_NUM = 10; // 화면에 유지할 봇의 수
+const BOT_NUM = 13; // 화면에 유지할 봇의 수
 const BOT_COLOR = "#00ff00"; // 봇 색상 (초록색) - 이제 기본값으로만 사용
 const BOT_SPEED = 0.000004; // [수정됨] 0.000001 -> 0.000004 (봇 속도 밸런스 조정)
 // const BOT_FOOD_DROP_COUNT = 5; // [제거됨] 봇 점수에 비례하도록 변경
-const COLLISION_DISTANCE = 0.000004; // [수정됨] 0.000008 -> 0.000004 (마디 간격보다 작게 설정)
+const COLLISION_DISTANCE = 0.000004; // [수정됨] 0.000008 -> 0.000004 (돌연사 버그 수정)
 const MODE_PROB = 0.001; // [추가됨] 봇이 모드를 변경할 확률 (1%)
 // --- [추가 끝] ---
 
@@ -229,7 +229,7 @@ function spawnInitialBots(centerLat, centerLng) {
   }
 }
 
-// [수정됨] 단일 봇 스폰 (이름 추가)
+// [수정됨] 단일 봇 스폰 (이름 및 방향 추가)
 function spawnBot(centerLat, centerLng) {
   const mapBounds = map.getBounds();
   const latRange = mapBounds.getNorth() - mapBounds.getSouth();
@@ -258,6 +258,8 @@ function spawnBot(centerLat, centerLng) {
     mode: 'FOOD', // [추가됨] 봇의 AI 모드 ('FOOD' 또는 'RANDOM')
     name: 'Bot ' + botCounter, // [추가됨] 봇 이름
     nameLabel: null, // [추가됨] 봇 이름표 레이어
+    currentDirX: 0, // [추가됨] 현재 이동 방향 X (부드러운 회전용)
+    currentDirY: -1, // [추가됨] 현재 이동 방향 Y (초기값 남쪽)
   };
 
   bots.push(bot);
@@ -416,7 +418,7 @@ function checkPlayerFoodCollision() {
   }
 }
 
-// Check [PLAYER] collision with self
+// [수정됨] Check [PLAYER] collision with self (자살 비활성화)
 function checkPlayerSelfCollision() {
   if (playerSnake.length < 10) return; // 1000 -> 10
 
@@ -428,8 +430,9 @@ function checkPlayerSelfCollision() {
     const dist = distance(head.lat, head.lng, segment.lat, segment.lng);
 
     if (dist < COLLISION_DISTANCE) {
-      gameOver();
-      return;
+      // [수정됨] 플레이어 자살 메커니즘 비활성화
+      // gameOver();
+      // return;
     }
   }
 }
@@ -479,21 +482,56 @@ function updateBots() {
     // [수정] 봇이 snake 데이터를 잃었으면 (예: 이전 프레임에서 오류 발생) 무시
     if (!bot.snake || bot.snake.length === 0) return;
 
-    // 1. [NEW] AI 모드 변경 결정
+    // 1. [NEW] AI 모드 변경 결정 (매 틱)
     if (Math.random() < MODE_PROB) {
       changeBotMode(bot);
     }
 
-    // 2. [MODIFIED] AI 모드에 따라 타겟 설정
+    // 2. [MODIFIED] AI 모드에 따라 타겟 설정 (매 틱)
     if (bot.mode === 'FOOD') {
       findBotTarget(bot); // 밥 모드일 때만 밥 탐색
     }
-    // (랜덤 모드일 경우, changeBotMode에서 이미 bot.target을 설정했음)
+    
+    // --- [수정됨] 봇 방향 스무딩 (매 틱) ---
+    if (bot.target) {
+      const head = bot.snake[0];
+      
+      // 1. '바라볼 방향' (Target Direction) 계산
+      const targetDx = bot.target.lng - head.lng;
+      const targetDy = bot.target.lat - head.lat;
+      const dist = Math.sqrt(targetDx * targetDx + targetDy * targetDy);
+
+      let targetDirX = bot.currentDirX; // 타겟이 없으면 현재 방향 유지
+      let targetDirY = bot.currentDirY;
+
+      if (dist > 0.00001) { // 타겟이 너무 가깝지 않으면
+        targetDirX = targetDx / dist; // '바라볼 방향' X
+        targetDirY = targetDy / dist; // '바라볼 방향' Y
+      }
+
+      // 2. '현재 방향'을 '바라볼 방향'으로 5%씩 보간 (Lerp)
+      // current = current * 0.95 + target * 0.05
+      bot.currentDirX = bot.currentDirX * 0.95 + targetDirX * 0.05;
+      bot.currentDirY = bot.currentDirY * 0.95 + targetDirY * 0.05;
+
+      // 3. (중요) 스무딩된 현재 방향을 다시 정규화(Normalize)
+      const currentDirMag = Math.sqrt(bot.currentDirX * bot.currentDirX + bot.currentDirY * bot.currentDirY);
+      if (currentDirMag > 0) {
+          bot.currentDirX /= currentDirMag;
+          bot.currentDirY /= currentDirMag;
+      }
+
+      // 4. [MODIFIED] 랜덤 모드 타겟 도달 시 모드 변경 (여기서 확인)
+      if (bot.mode === 'RANDOM' && dist < 0.00015) {
+        changeBotMode(bot); // 밥 모드로 강제 변경
+      }
+    }
+    // --- 스무딩 끝 ---
 
     // 3. [EXISTING] 10% 확률로 이동 및 상호작용
     if (Math.random() < 0.1) {
-      moveBot(bot);
-      checkBotFoodCollision(bot); // [수정됨] 봇 충돌 로직 개선 (하단 참조)
+      moveBot(bot); // [MODIFIED] moveBot은 이제 bot.currentDirX/Y를 사용
+      checkBotFoodCollision(bot); 
       checkBotSelfCollision(bot);
     }
 
@@ -525,29 +563,19 @@ function findBotTarget(bot) {
   }
 }
 
-// 봇의 뱀을 목표물로 이동
+// [수정됨] 봇의 뱀을 스무딩된 방향으로 이동
 function moveBot(bot) {
-  if (!bot.target) return; // 목표가 없으면 움직이지 않음
   if (!bot.snake || bot.snake.length === 0) return; // 방어 코드
 
   const head = bot.snake[0];
 
-  // [수정] 목표 좌표를 bot.target 객체에서 직접 가져옴
-  const dx = bot.target.lng - head.lng;
-  const dy = bot.target.lat - head.lat;
-  const dist = Math.sqrt(dx * dx + dy * dy);
+  // [수정] 타겟 방향이 아닌, 이미 스무딩된 '현재 방향'을 사용
+  const dirX = bot.currentDirX;
+  const dirY = bot.currentDirY;
 
-  // [추가됨] 랜덤 모드일 때, 타겟에 도달하면 모드 변경
-  if (bot.mode === 'RANDOM' && dist < 0.00015) {
-      changeBotMode(bot); // 밥 모드로 강제 변경
-  }
-
-  if (dist > 0.00001) {
-    // Normalize direction
-    const dirX = dx / dist;
-    const dirY = dy / dist;
-
-    // Move head towards target
+  // 방향이 설정되었을 때만 이동 (스폰 직후 (0,0) 방지)
+  if (dirX !== 0 || dirY !== 0) {
+    // Move head towards smoothed direction
     const newHead = {
       lat: head.lat + dirY * BOT_SPEED,
       lng: head.lng + dirX * BOT_SPEED,
@@ -619,6 +647,7 @@ function checkBotSelfCollision(bot) {
   const head = bot.snake[0];
   for (let i = 5; i < bot.snake.length; i++) {
     const segment = bot.snake[i];
+    if (!segment) continue; // 방어 코드
     const dist = distance(head.lat, head.lng, segment.lat, segment.lng);
 
     if (dist < COLLISION_DISTANCE) {
