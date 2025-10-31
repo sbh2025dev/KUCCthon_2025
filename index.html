@@ -283,6 +283,42 @@
         pointer-events: none;
         z-index: 999;
       }
+
+      /* Start/Pause Button */
+      .play-pause-button {
+        position: fixed;
+        bottom: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: #c4ff61;
+        border: none;
+        cursor: pointer;
+        z-index: 2000;
+        box-shadow: 0 4px 20px rgba(196, 255, 97, 0.5);
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+
+      .play-pause-button:hover {
+        transform: translateX(-50%) scale(1.05);
+        box-shadow: 0 6px 25px rgba(196, 255, 97, 0.7);
+      }
+
+      .play-pause-button:active {
+        transform: translateX(-50%) scale(0.95);
+      }
+
+      .button-icon {
+        width: 40px;
+        height: 40px;
+        color: #000000;
+      }
     </style>
   </head>
   <body>
@@ -333,6 +369,27 @@
     <div id="bot-slain-message" class="bot-slain-message"></div>
 
     <div id="cursor-indicator" class="cursor-indicator"></div>
+
+    <!-- Start/Pause Button -->
+    <button id="play-pause-btn" class="play-pause-button">
+      <svg
+        id="play-icon"
+        class="button-icon"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path d="M8 5v14l11-7z" />
+      </svg>
+      <svg
+        id="pause-icon"
+        class="button-icon"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        style="display: none"
+      >
+        <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+      </svg>
+    </button>
 
     <script src="script.js"></script>
   </body>

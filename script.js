@@ -11,10 +11,15 @@ let bots = []; // AI 봇들을 저장할 배열
 let foodItems = [];
 let score = 0;
 let gameActive = false;
+let gameInitialized = false; // 게임이 초기화되었는지 여부
 let mouseTarget = null; // 플레이어 뱀의 목표 (GPS)
 let animationFrame = null;
 let botCounter = 1; // [추가됨] 봇 이름 카운터
 // --- [수정 끝] ---
+
+// Timer variables
+let gameTime = 0; // 초 단위 게임 시간
+let timerInterval = null;
 
 // Game configuration
 const INITIAL_SNAKE_LENGTH = 5;
@@ -102,8 +107,9 @@ function initGame(centerLat, centerLng) {
   // [추가됨] Spawn initial bots
   spawnInitialBots(centerLat, centerLng);
 
-  // Reset score
+  // Reset score and timer
   score = 0;
+  gameTime = 0;
   updateHUD();
 
   // Show game HUD
@@ -112,9 +118,14 @@ function initGame(centerLat, centerLng) {
 
   // Set snake color to bright red
   currentSnakeColor = "#ff0000";
-  // Start game loop
-  gameActive = true;
-  gameLoop();
+
+  // Mark game as initialized but don't start yet
+  gameInitialized = true;
+  gameActive = false; // 게임은 일시정지 상태로 시작
+
+  // Render initial state
+  renderPlayer();
+  bots.forEach((bot) => renderBot(bot));
 }
 
 // Clear game elements
@@ -145,6 +156,9 @@ function clearGame() {
     cancelAnimationFrame(animationFrame);
     animationFrame = null;
   }
+
+  // Stop timer
+  stopTimer();
 }
 
 // [추가됨] Bot의 Leaflet 레이어 제거
@@ -976,27 +990,51 @@ function gameLoop() {
 function updateHUD() {
   // document.getElementById("score").textContent = score;
   document.getElementById("length").textContent = playerSnake.length; // 'snake' -> 'playerSnake'
+
+  // Update timer display
+  const minutes = Math.floor(gameTime / 60);
+  const seconds = gameTime % 60;
+  document.getElementById("time").textContent = `${minutes}:${seconds
+    .toString()
+    .padStart(2, "0")}`;
+
+  // Calculate distance (length * segment distance converted to km)
+  const distanceKm = (playerSnake.length * SNAKE_SEGMENT_DISTANCE * 10) // not a real calculation
+    .toFixed(2);
+  document.getElementById("distance").textContent = distanceKm;
 }
 
 // Game over
 function gameOver() {
   gameActive = false;
+  gameInitialized = false;
 
   if (animationFrame) {
     cancelAnimationFrame(animationFrame);
     animationFrame = null;
   }
 
+  // Stop timer
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
   // Show game over screen
   document.getElementById("final-score").textContent = score;
   document.getElementById("final-length").textContent = playerSnake.length; // 'snake' -> 'playerSnake'
   document.getElementById("game-over").style.display = "block";
+
+  // Reset play/pause button to play state
+  updatePlayPauseButton(false);
 }
 
 // Restart game
 function restartGame() {
   const center = map.getCenter();
   initGame(center.lat, center.lng);
+  // Reset button to play state
+  updatePlayPauseButton(false);
 }
 
 // Update the location display
@@ -1112,8 +1150,8 @@ function updateLocation() {
       // Update snake target to current GPS position
       mouseTarget = { lat: lat, lng: lng };
 
-      // Start the game
-      if (!gameActive) {
+      // Initialize the game (but don't start it)
+      if (!gameInitialized && !gameActive) {
         initGame(lat, lng);
       }
     },
@@ -1157,9 +1195,69 @@ function updateLocation() {
 // Mouse/Touch handlers (DISABLED)
 // ... (기존과 동일) ...
 
+// Start timer
+function startTimer() {
+  if (timerInterval) return; // Already running
+
+  timerInterval = setInterval(() => {
+    if (gameActive) {
+      gameTime++;
+      updateHUD();
+    }
+  }, 1000);
+}
+
+// Stop timer
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+// Toggle play/pause
+function togglePlayPause() {
+  if (!gameInitialized) return; // Game not initialized yet
+
+  gameActive = !gameActive;
+
+  if (gameActive) {
+    // Start game
+    startTimer();
+    gameLoop();
+    updatePlayPauseButton(true);
+  } else {
+    // Pause game
+    stopTimer();
+    if (animationFrame) {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+    }
+    updatePlayPauseButton(false);
+  }
+}
+
+// Update play/pause button icon
+function updatePlayPauseButton(isPlaying) {
+  const playIcon = document.getElementById("play-icon");
+  const pauseIcon = document.getElementById("pause-icon");
+
+  if (isPlaying) {
+    playIcon.style.display = "none";
+    pauseIcon.style.display = "block";
+  } else {
+    playIcon.style.display = "block";
+    pauseIcon.style.display = "none";
+  }
+}
+
 // Initialize on page load
 window.addEventListener("load", () => {
   updateLocation();
   // Update location every second
   setInterval(updateLocation, 1000);
+
+  // Add play/pause button event listener
+  const playPauseBtn = document.getElementById("play-pause-btn");
+  playPauseBtn.addEventListener("click", togglePlayPause);
 });
