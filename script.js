@@ -1,6 +1,6 @@
 // Initialize the map
 let map;
-let marker;
+let marker; // [수정됨] 'centerMarker' 대신 이 전역 변수를 사용합니다.
 let accuracyCircle;
 
 // --- [수정됨] Game variables ---
@@ -26,11 +26,12 @@ const FOOD_RADIUS = 10;
 const MAP_ZOOM = 17;
 
 // --- [추가됨] Bot configuration ---
-const BOT_NUM = 5; // 화면에 유지할 봇의 수
+const BOT_NUM = 10; // 화면에 유지할 봇의 수
 const BOT_COLOR = "#00ff00"; // 봇 색상 (초록색) - 이제 기본값으로만 사용
-const BOT_SPEED = 0.000008; // [수정됨] 0.000001 -> 0.000004 (봇 속도 밸런스 조정)
-const BOT_FOOD_DROP_COUNT = 5; // 봇 사망 시 드랍할 음식 수
+const BOT_SPEED = 0.000004; // [수정됨] 0.000001 -> 0.000004 (봇 속도 밸런스 조정)
+// const BOT_FOOD_DROP_COUNT = 5; // [제거됨] 봇 점수에 비례하도록 변경
 const COLLISION_DISTANCE = 0.000008; // 충돌 감지 거리
+const MODE_PROB = 0.01; // [추가됨] 봇이 모드를 변경할 확률 (1%)
 // --- [추가 끝] ---
 
 // Moving average configuration for GPS smoothing
@@ -127,11 +128,11 @@ function clearGame() {
   playerSnakeCircles.forEach((circle) => map.removeLayer(circle));
   playerSnakeCircles = [];
 
-  // [추가됨] Remove bot snakes
+  // [수정됨] 봇 레이어 제거 및 배열 초기화 (유령 봇 버그 수정)
   bots.forEach((bot) => clearBotLayers(bot));
   bots = [];
 
-  // Remove food items
+  // [수정됨] 음식 아이템 제거 및 배열 초기화
   foodItems.forEach((food) => map.removeLayer(food.circle));
   foodItems = [];
 
@@ -242,9 +243,10 @@ function spawnBot(centerLat, centerLng) {
     snake: botSnake,
     polyline: null,
     circles: [],
-    target: null, // AI 목표물 (food 객체)
+    target: null, // AI 목표물 (food 객체 또는 랜덤 좌표)
     score: 0, // 봇의 점수(길이)
     color: generateBotColor(), // [수정됨] 봇마다 고유 색상 부여
+    mode: 'FOOD', // [추가됨] 봇의 AI 모드 ('FOOD' 또는 'RANDOM')
   };
 
   bots.push(bot);
@@ -274,6 +276,32 @@ function generateBotColor() {
   return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 }
 // --- [추가 끝] ---
+
+// --- [추가됨] 봇 AI 모드 변경 ---
+function changeBotMode(bot) {
+  if (bot.mode === 'FOOD') {
+    // 1. 랜덤 모드로 변경
+    bot.mode = 'RANDOM';
+    
+    // 2. 랜덤 타겟 설정 (먼 거리의 임의 좌표)
+    const head = bot.snake[0];
+    const angle = Math.random() * 2 * Math.PI; // 0~360도 랜덤 각도
+    const randomDist = 0.05; // 맵 상에서 이동할 랜덤 거리 (조정 가능)
+    
+    const targetLat = head.lat + Math.sin(angle) * randomDist;
+    const targetLng = head.lng + Math.cos(angle) * randomDist;
+    
+    bot.target = { lat: targetLat, lng: targetLng, id: 'RANDOM_TARGET' }; // id 추가
+    
+  } else {
+    // 1. 밥 모드로 변경
+    bot.mode = 'FOOD';
+    // 2. 타겟 초기화 (findBotTarget이 새 밥을 찾도록)
+    bot.target = null;
+  }
+}
+// --- [추가 끝] ---
+
 
 // --- Player Snake 로직 ---
 
@@ -428,28 +456,34 @@ function renderPlayer() {
 // 맵 상의 봇들을 업데이트
 function updateBots() {
   bots.forEach((bot) => {
-    // 1. AI로 목표물 찾기 (목표물 탐색은 매 프레임 수행)
-    findBotTarget(bot);
+    
+    // 1. [NEW] AI 모드 변경 결정
+    if (Math.random() < MODE_PROB) {
+      changeBotMode(bot);
+    }
 
-    // [수정됨] 10% 확률로만 이동 및 충돌 검사 수행
+    // 2. [MODIFIED] AI 모드에 따라 타겟 설정
+    if (bot.mode === 'FOOD') {
+      findBotTarget(bot); // 밥 모드일 때만 밥 탐색
+    }
+    // (랜덤 모드일 경우, changeBotMode에서 이미 bot.target을 설정했음)
+
+    // 3. [EXISTING] 10% 확률로 이동 및 상호작용
     if (Math.random() < 0.1) {
-      // 2. 목표물로 이동
       moveBot(bot);
-      // 3. 봇 음식 섭취 확인
-      checkBotFoodCollision(bot);
-      // 4. 봇 자살 확인
+      checkBotFoodCollision(bot); // [수정됨] 봇 충돌 로직 개선 (하단 참조)
       checkBotSelfCollision(bot);
     }
 
-    // 5. 봇 렌더링 (렌더링은 매 프레임 수행)
+    // 4. [EXISTING] 렌더링은 매 프레임
     renderBot(bot);
   });
 }
 
 // [AI] 봇의 목표물(가장 가까운 음식) 찾기
 function findBotTarget(bot) {
-  // 목표물이 없거나, 1% 확률로 목표물 재탐색
-  if (!bot.target || Math.random() < 0.01) {
+  // [수정됨] 밥 모드일 때, (타겟이 없거나 || 1% 확률로 타겟 변경)
+  if (bot.mode === 'FOOD' && (!bot.target || Math.random() < 0.01)) {
     let closestFood = null;
     let minDistance = Infinity;
     const botHead = bot.snake[0];
@@ -479,8 +513,10 @@ function moveBot(bot) {
   const dy = bot.target.lat - head.lat;
   const dist = Math.sqrt(dx * dx + dy * dy);
 
-  // [제거] 목표 도달 확인은 checkBotFoodCollision에서 처리
-  // if (dist < 0.00015) { ... }
+  // [추가됨] 랜덤 모드일 때, 타겟에 도달하면 모드 변경
+  if (bot.mode === 'RANDOM' && dist < 0.00015) {
+      changeBotMode(bot); // 밥 모드로 강제 변경
+  }
 
   if (dist > 0.00001) {
     // Normalize direction
@@ -520,36 +556,33 @@ function moveBot(bot) {
   }
 }
 
-// 봇과 음식 충돌 확인
+// [수정됨] 봇과 음식 충돌 확인 (랜덤 모드에서도 먹도록 수정)
 function checkBotFoodCollision(bot) {
-  // [수정] 목표물이 없으면 절대 먹을 수 없음
-  if (!bot.target) return;
-
   const head = bot.snake[0];
-  const food = bot.target; // [수정] 오직 목표물만 확인
 
-  const dist = distance(head.lat, head.lng, food.lat, food.lng);
+  for (let i = foodItems.length - 1; i >= 0; i--) {
+    const food = foodItems[i];
+    const dist = distance(head.lat, head.lng, food.lat, food.lng);
 
-  // [수정] 목표물과 충돌했는지 확인
-  if (dist < 0.00015) {
-    // foodItems 배열에서 이 food를 찾아 제거
-    const foodIndex = foodItems.findIndex((f) => f.id === food.id);
+    // 밥과 충돌 감지
+    if (dist < 0.00015) {
+      // 이 밥이 다른 봇의 타겟이었는지 확인
+      bots.forEach(b => {
+          if (b.target && b.target.id === food.id) {
+              b.target = null; // 타겟 초기화
+          }
+      });
 
-    if (foodIndex > -1) {
-      // 음식을 찾았다면 (플레이어 등이 먼저 먹지 않았다면)
+      // 음식 제거
       map.removeLayer(food.circle);
-      foodItems.splice(foodIndex, 1);
+      foodItems.splice(i, 1);
       bot.score++;
-
-      // 봇이 음식을 먹으면 즉시 목표물 초기화 (다음 프레임에 새로 찾도록)
-      bot.target = null;
-
+      
       const centerLat = bot.snake[0].lat;
       const centerLng = bot.snake[0].lng;
       respawnFood(centerLat, centerLng);
-    } else {
-      // 누군가(플레이어 또는 다른 봇)가 이 음식을 방금 먹었음
-      bot.target = null; // 목표 초기화
+      
+      break; // 한 프레임에 하나만 먹음
     }
   }
 }
@@ -609,8 +642,8 @@ function killBot(bot, killType) {
   // 2. 봇 배열에서 제거
   bots = bots.filter((b) => b.id !== bot.id);
 
-  // 3. 봇의 몸통을 음식으로 드랍
-  dropFoodFromSnake(bot.snake);
+  // 3. 봇의 몸통을 음식으로 드랍 [수정됨]
+  dropFoodFromSnake(bot);
 
   // 4. 플레이어가 죽인 경우, 점수 추가 및 메시지 표시
   if (killType === "player_kill") {
@@ -621,32 +654,42 @@ function killBot(bot, killType) {
   }
 }
 
-// 뱀 몸통을 음식으로 변환
-function dropFoodFromSnake(snakeArray) {
-  // 성능을 위해 뱀의 모든 마디가 아닌, 일부만 음식으로 드랍
-  for (let i = 0; i < snakeArray.length; i += 10) {
-    if (i > BOT_FOOD_DROP_COUNT * 10) break; // 최대 드랍 수
+// [수정됨] 뱀 몸통을 점수에 비례하여 음식으로 변환
+function dropFoodFromSnake(bot) {
+    const snakeArray = bot.snake;
+    // 봇이 먹은 밥(score)의 50%만큼 드랍 (최소 1개는 드랍되도록 올림)
+    const foodToDrop = Math.ceil(bot.score * 0.5);
 
-    const segment = snakeArray[i];
-    const foodColor =
-      SNAKE_COLORS[Math.floor(Math.random() * SNAKE_COLORS.length)];
-    const circle = L.circle([segment.lat, segment.lng], {
-      radius: FOOD_RADIUS, // 일반 음식보다 약간 크게
-      color: foodColor,
-      fillColor: foodColor,
-      fillOpacity: 0.9,
-      weight: 2,
-    }).addTo(map);
-    // [수정] 드랍되는 음식에도 ID 부여
-    foodItems.push({
-      id: Date.now() + Math.random(),
-      lat: segment.lat,
-      lng: segment.lng,
-      circle,
-      color: foodColor,
-    });
-  }
+    // 먹은게 없으면(score 0) 드랍 없음
+    if (foodToDrop <= 0) return;
+
+    const snakeLength = snakeArray.length;
+    // 뱀 길이를 드랍할 음식 수로 나누어 '간격(step)'을 계산
+    // (간격은 최소 1, 0으로 나눠지는것 방지)
+    const step = Math.max(1, Math.floor(snakeLength / foodToDrop));
+
+    // 뱀 몸통을 'step' 간격으로 순회하며 음식 드랍
+    for (let i = 0; i < snakeLength; i += step) { 
+        const segment = snakeArray[i];
+        const foodColor = SNAKE_COLORS[Math.floor(Math.random() * SNAKE_COLORS.length)];
+        const circle = L.circle([segment.lat, segment.lng], {
+            radius: FOOD_RADIUS,
+            color: foodColor,
+            fillColor: foodColor,
+            fillOpacity: 0.9,
+            weight: 2,
+        }).addTo(map);
+        
+        foodItems.push({ 
+            id: Date.now() + Math.random(), 
+            lat: segment.lat, 
+            lng: segment.lng, 
+            circle, 
+            color: foodColor 
+        });
+    }
 }
+
 
 // 킬 메시지 표시
 function showKillMessage(message) {
@@ -887,7 +930,7 @@ function updateLocation() {
         // map.setView([lat, lng], MAP_ZOOM);
       }
 
-      // Remove existing marker and accuracy circle if they exist
+      // [수정됨] 청색 점(GPS 마커) 중첩 버그 수정
       if (marker) {
         map.removeLayer(marker);
       }
@@ -904,8 +947,8 @@ function updateLocation() {
         weight: 1,
       }).addTo(map);
 
-      // add center marker
-      const centerMarker = L.circle([lat, lng], {
+      // [수정됨] 'centerMarker' 대신 전역 변수 'marker'에 할당
+      marker = L.circle([lat, lng], {
         radius: 10,
         color: "#667eea",
         fillColor: "#667eea",
