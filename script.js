@@ -377,11 +377,6 @@ function hideLoading() {
 
 // Get and display current location
 function updateLocation() {
-  const loadingEl = document.getElementById("loading");
-  loadingEl.style.display = "block";
-  loadingEl.textContent = "Getting your location...";
-  loadingEl.classList.remove("error");
-
   if (!navigator.geolocation) {
     showError("❌ Geolocation is not supported by your browser");
     return;
@@ -511,4 +506,6 @@ document.addEventListener("touchmove", (e) => {
 // Initialize on page load
 window.addEventListener("load", () => {
   updateLocation();
+  // Update location every second
+  setInterval(updateLocation, 1000);
 });
